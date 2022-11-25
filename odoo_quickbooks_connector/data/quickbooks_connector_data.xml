@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <record model="quickbooks.connector" id="quick_data">
+            <field name="quick_auth_url">https://appcenter.intuit.com/connect/oauth2</field>
+            <field name="quick_access_token_url">https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer</field>
+            <field name="quick_api_url">https://sandbox-quickbooks.api.intuit.com/v3/company/</field>
+            <field name="quick_client_id">Your client id</field>
+            <field name="quick_client_secret">Your client secret</field>
+        </record>
+
+    </data>
+    <data noupdate="1">
+    </data>
+</odoo>

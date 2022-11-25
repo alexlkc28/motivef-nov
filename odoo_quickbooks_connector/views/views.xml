@@ -1,0 +1,29 @@
+<odoo>
+    <record model="ir.ui.view" id="view_account_move_form">
+        <field name="name">account.move.inherit</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='button_cancel']" position="after">
+                <button name="button_invoice_sync_qb" string="Sync to QB" class="oe_highlight" type="object"/>
+            </xpath>
+            <xpath expr="//page[@name='other_info']" position="inside">
+                <group name="quick_details" string="Quickbook Details">
+                    <field name="quickbook_id"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="stock_move_form">
+        <field name="name">stock.picking.inherit</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='group_id']" position="after">
+                <field name="quickbook_id"/>
+                <field name="return_delivery"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

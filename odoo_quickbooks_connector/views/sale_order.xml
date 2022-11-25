@@ -1,0 +1,50 @@
+<odoo>
+    <record model="ir.ui.view" id="view_so_form_quick_id">
+        <field name="name">sale.order.inherit</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='sale_reporting']" position="after">
+                <group name="quick_book_details" string="QuickBook Details">
+<!--                    <field name="quickbook_connector_id"/>-->
+                    <field name="quickbook_id"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="view_product_form_quick_id">
+        <field name="name">product.template.inherit</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='invoicing']" position="after">
+                <page name="quickbook_details" string="Quickbook Information">
+                <group>
+                    <group>
+                        <field name="quickbook_id"/>
+                    </group>
+                </group>
+                <group name="account_details" string="Account Information">
+                    <group>
+                        <field name="quick_delivery_account"/>
+                        <field name="quick_delivery_account_id"/>
+                    </group>
+                    <group>
+                        <field name="quickbook_income_account"/>
+                        <field name="quickbook_income_account_id" default="32"/>
+                    </group>
+                    <group>
+                        <field name="quickbook_expense_account"/>
+                        <field name="quickbook_expense_account_id" default="32"/>
+                    </group>
+                    <group>
+                        <field name="quickbook_asset_account"/>
+                        <field name="quickbook_asset_account_id" default="32"/>
+                    </group>
+                </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

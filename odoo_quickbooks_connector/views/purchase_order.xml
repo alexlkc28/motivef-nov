@@ -1,0 +1,20 @@
+<odoo>
+<record model="ir.ui.view" id="view_po_form_quick_id">
+        <field name="name">purchase.order.inherit</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='purchase_delivery_invoice']" position="inside">
+                <group>
+                    <group name="quick_book_details" string="QuickBook Details">
+<!--                        <field name="quickbook_connector_id"/>-->
+                        <field name="quickbook_id"/>
+                    </group>
+                </group>
+            </xpath>
+            <xpath expr="//button[@name='button_done']" position="after">
+                <button name="update_order_line" type='object' string="Update PO" attrs="{'invisible':[('state','!=', 'purchase')]}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

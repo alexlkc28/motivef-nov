@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="quickbooks_connector_act_window" model="ir.actions.act_window">
+            <field name="name">QuickBooks Connector</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">quickbooks.connector</field>
+            <field name="view_mode">tree,form</field>
+            <field name="help" type="html">
+                <p class="oe_view_nocontent_create">
+                    No record found.
+                </p>
+            </field>
+        </record>
+
+        <menuitem name="Quickbooks Connector" id="quickbooks_main_menu"
+                  web_icon="odoo_quickbooks_connector,static/description/icon.png"/>
+        <menuitem name="Configuration" id="quickbooks_conf_menu" parent="quickbooks_main_menu"/>
+        <menuitem name="Quickbooks" id="quickbooks_menu" parent="quickbooks_conf_menu"
+                  action="quickbooks_connector_act_window"/>
+
+        <record id="res_config_settings_view_form" model="ir.ui.view">
+            <field name="name">quickbooks.connector.form</field>
+            <field name="model">quickbooks.connector</field>
+            <field name="arch" type="xml">
+                <form string="Quickbook" name="quickbook">
+
+                    <header>
+                        <button name="action_quickbook_auth" string="Authorize"
+                                type="object" class="oe_highlight"/>
+                        <button name="action_refresh_token" string="Refresh token"
+                                type="object" class="oe_highlight"/>
+<!--                        <button name="action_fetch_bill" string="Fetch Bill"-->
+<!--                                type="object" class="oe_highlight"/>-->
+                    </header>
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="quick_auth_url"/>
+                                <field name="quick_access_token_url"/>
+                                <field name="quick_realm_id"/>
+                                <field name="quick_client_id"/>
+                                <field name="quick_client_secret"/>
+                            </group>
+                            <group>
+                                <field name="quick_access_token_expiry"/>
+                                <field name="quick_refresh_token_expiry"/>
+                                <field name="quick_mode"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="ModelName_tree_view" model="ir.ui.view">
+            <field name="name">quickbooks.connector.tree</field>
+            <field name="model">quickbooks.connector</field>
+            <field name="arch" type="xml">
+                <tree string="ModelTitle">
+                    <field name="quick_client_secret"/>
+                    <field name="quick_client_id"/>
+                    <field name="quick_mode"/>
+                </tree>
+            </field>
+        </record>
+    </data>
+</odoo>
