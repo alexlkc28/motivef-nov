@@ -164,16 +164,16 @@ class AccountMove(models.Model):
     qbooks_sync_token = fields.Char(string='Quickbook Token')
 
     def button_invoice_sync_qb(self):
-        invoice = self
-        sale = self.env['sale.order'].search([('name', '=', invoice.invoice_origin)])
-        if invoice.quickbook_id == 0:
-            print('df')
-            self.env['quickbooks.connector'].search([('id', '=', self.env.company.quickbook_connector_id)]). \
-                create_and_sync_invoices(invoice, sale)
-            # self.env['quickbooks.connector'].search([('id', '=', self.env.company.quickbook_connector_id)]). \
-            #     sale_order_status_updation(sale, invoice)
-        else:
-            raise UserError('This invoice is already synced')
+        invoice_obj = self.env['account.move'].search([])
+        for invoice in invoice_obj:
+            sale = self.env['sale.order'].search([('name', '=', invoice.invoice_origin)])
+            if invoice.quickbook_id == 0:
+                self.env['quickbooks.connector'].search([('id', '=', self.env.company.quickbook_connector_id)]). \
+                    create_and_sync_invoices(invoice, sale)
+
+    def button_invoice_status_updation(self):
+        self.env['quickbooks.connector'].search([('id', '=', self.env.company.quickbook_connector_id)]). \
+            action_export_invoice_status()
 
     def action_post(self):
         res = super(AccountMove, self).action_post()

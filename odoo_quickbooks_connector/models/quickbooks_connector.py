@@ -273,11 +273,11 @@ class QuickbooksConnector(models.Model):
             'consu': 'NonInventory',
             'product': 'Inventory',
         }
-        if not product.quickbook_income_account_id:
+        if product.quickbook_income_account_id == 0:
             raise ValidationError('Please fill the income account in product form')
-        if not product.quickbook_asset_account_id:
+        if product.quickbook_asset_account_id == 0:
             raise ValidationError('Please fill the asset account in product form')
-        if not product.quickbook_expense_account_id:
+        if product.quickbook_expense_account_id == 0:
             raise ValidationError('Please fill the expense account in product form')
         req_body = {
             "Name": product.name + str(product.id),
@@ -678,52 +678,58 @@ class QuickbooksConnector(models.Model):
         print(sale, 'saleeey')
         if not sale.quickbook_id == 0:
             url = self.get_import_query()
+            print(url,'urll')
             if url:
                 req_url = f'{url["url"]}/invoice?minorversion=65'
                 headers = url.get('headers')
                 headers['Content-Type'] = 'application/json'
+                customer = invoice.partner_id.name
+                customer_code = invoice.partner_id.quickbook_id
+                req_body = {
+                    "Line": [],
+                    "CustomerRef": {
+                        "value": customer_code
+                    }
+                }
                 for line in invoice.invoice_line_ids:
+                    print(line)
                     amount = line.price_subtotal
-                    item_name = line.product_id.name
-                    item_code = line.product_id.quickbook_id
-                    customer = invoice.partner_id.name
-                    customer_code = invoice.partner_id.quickbook_id
-                    req_body = {
-                                  "Line": [
-                                    {
-                                      "DetailType": "SalesItemLineDetail",
-                                      "Amount": amount,
-                                      "SalesItemLineDetail": {
-                                        "ItemRef": {
-                                          "name": item_name,
-                                          "value": item_code
+                    if line.product_id:
+                        if line.product_id.quickbook_id == 0:
+                            self.create_product_item(line.product_id, line.name)
+                        item_name = line.product_id.name
+                        item_code = line.product_id.quickbook_id
+                        req_body['Line'].append(
+                                        {
+                                          "DetailType": "SalesItemLineDetail",
+                                          "Amount": amount,
+                                          "SalesItemLineDetail": {
+                                            "ItemRef": {
+                                              "name": item_name,
+                                              "value": item_code
+                                            }
+                                          }
                                         }
-                                      }
-                                    }
-                                  ],
-                                  "CustomerRef": {
-                                    "value": customer_code
-                                  }
-                                }
+                        )
 
                     print(req_body)
 
-                    response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
-                    if response.json():
-                        print(response.json(),'response')
-                        if response.json().get('Invoice'):
-                            res = response.json().get('Invoice')
-                            if 'Id' in res:
-                                invoice.write({
-                                    'quickbook_id': res.get('Id'),
-                                    'qbooks_sync_token': res.get('SyncToken')
-                                })
-                                self.env.cr.commit()
+                response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
+                if response.json():
+                    print(response.json(), 'response')
+                    if response.json().get('Invoice'):
+                        res = response.json().get('Invoice')
+                        if 'Id' in res:
+                            invoice.write({
+                                'quickbook_id': res.get('Id'),
+                                'qbooks_sync_token': res.get('SyncToken')
+                            })
+                            self.env.cr.commit()
 
-                        elif response.json().get('fault') and response.json().get('fault').get('error')[0].get(
-                                'code') == '3200':
-                            raise UserError(
-                                _("Token expired. Kindly refresh token"))
+                    elif response.json().get('fault') and response.json().get('fault').get('error')[0].get(
+                            'code') == '3200':
+                        raise UserError(
+                            _("Token expired. Kindly refresh token"))
 
     def sale_order_status_updation(self, sale, invoice):
         self.delete_the_current_so(sale)
@@ -765,4 +771,56 @@ class QuickbooksConnector(models.Model):
                       "Id": sale.quickbook_id
                     }
             response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
+    # def action_invoice_button(self):
+    #     print('hii')
+    #     self.action_export_invoice_status()
+
+    def action_export_invoice_status(self):
+        print('lloo')
+        url = self.get_import_query()
+        print(url, 'url')
+        if url:
+            query = 'select * from Invoice'
+            print(query, 'df')
+            get_url = url['url'] + f'/query?minorversion={self.minor_version}&query={query}'
+            data = requests.get(get_url, headers=url['headers'])
+            print(data,'dataaaaaa')
+            total = 0
+            invoice_odoo = self.env['account.move'].search([('quickbook_id', '!=',0)])
+            print(invoice_odoo)
+            if data.json() and data.json().get('fault'):
+                if data.json().get('fault').get('type') == 'AUTHENTICATION':
+                    self.action_refresh_token()
+                    data = requests.get(get_url, headers=url['headers'])
+                    print(data, 'dataa')
+            if data.json() and data.json().get('QueryResponse'):
+                invoices_quickbook = data.json().get('QueryResponse').get('Invoice')
+                for invoice in invoice_odoo:
+                    for invoice_q in invoices_quickbook:
+                        # print(invoice_q, 'idcdsvb')
+                        qbinvoice_id = int(invoice_q['Id'])
+                        if invoice.quickbook_id == qbinvoice_id:
+                            print(invoice, 'invoiceeee')
+                            print(invoice_q,'invoicee___q')
+                            if invoice_q['LinkedTxn']:
+                                print('hii')
+                                for txn_type in invoice_q['LinkedTxn']:
+                                    if txn_type['TxnType'] == 'Payment':
+                                        if invoice.state != 'posted':
+                                            invoice.action_post()
+                                            invoice.state = 'posted'
+                                        if invoice.payment_state != 'paid':
+                                            invoice.payment_state = 'paid'
+                        # all_invoice = invoice_odoo.search([('quickbook_id', '=', qbinvoice_id)])
+                        # print(invoice_q['Id'], invoice_q['LinkedTxn'])
+                        # for invoice_o in invoice_odoo:
+                        #     if invoice_o.quickbook_id != 0:
+                        #         print(type(qbinvoice_id))
+                        #         print(type)
+                        #         print(all_invoice,'aaaal')
+
+
+
+
+
 
