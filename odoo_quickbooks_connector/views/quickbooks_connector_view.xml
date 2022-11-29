@@ -49,6 +49,14 @@
                                 <field name="quick_mode"/>
                             </group>
                         </group>
+                        <notebook>
+                            <page name="export_from_qb" string="Export From QB">
+                                <group>
+                                    <button name="action_export_invoice_status" string="Update Invoice Status"
+                                type="object" class="oe_highlight"/>
+                                </group>
+                            </page>
+                        </notebook>
                     </sheet>
                 </form>
             </field>
