@@ -174,14 +174,14 @@ class AccountMove(models.Model):
     #     self.env['quickbooks.connector'].search([('id', '=', self.env.company.quickbook_connector_id)]). \
     #         action_export_invoice_status()
 
-    def action_post(self):
-        res = super(AccountMove, self).action_post()
-        invoice = self
-        sale = self.env['sale.order'].search([('name', '=', invoice.invoice_origin)])
-        if not self.quickbook_id == 0:
-            self.env['quickbooks.connector'].search([('id', '=', self.env.company.quickbook_connector_id)]). \
-            sale_order_status_updation(sale, invoice)
-        return res
+    # def action_post(self):
+    #     res = super(AccountMove, self).action_post()
+    #     invoice = self
+    #     sale = self.env['sale.order'].search([('name', '=', invoice.invoice_origin)])
+    #     if not self.quickbook_id == 0:
+    #         self.env['quickbooks.connector'].search([('id', '=', self.env.company.quickbook_connector_id)]). \
+    #         sale_order_status_updation(sale, invoice)
+    #     return res
 
 
 class StockReturnPicking(models.TransientModel):

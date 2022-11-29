@@ -12,12 +12,10 @@ class QuickbooksConnector(models.Model):
     _name = 'quickbooks.connector'
     _description = 'Quickbooks Connector Configuration'
 
-    quick_auth_url = fields.Char('Authorization URL',
-                                           default="https://appcenter.intuit.com/connect/oauth2")
+    quick_auth_url = fields.Char('Authorization URL', default="https://appcenter.intuit.com/connect/oauth2")
     quick_access_token_url = fields.Char('Authorization Token URL',
-                                              default="https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer")
-    quick_api_url = fields.Char('API URL',
-                                     default="https://sandbox-quickbooks.api.intuit.com/v3/company/")
+                                         default="https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer")
+    quick_api_url = fields.Char('API URL', default="https://sandbox-quickbooks.api.intuit.com/v3/company/")
     quick_realm_id = fields.Char('Realm ID')
     quick_auth_code = fields.Char('Auth code')
     quick_access_token = fields.Char(string='Token')
@@ -33,6 +31,8 @@ class QuickbooksConnector(models.Model):
         default='sandbox')
     minor_version = fields.Integer(string='Minor Version')
 
+    invoice_paid = fields.Boolean(string='Invoice Paid/Not Paid', default=False)
+
     @api.onchange('quick_mode')
     def onchange_quick_mode(self):
         if self.quick_mode == 'sandbox':
@@ -43,7 +43,9 @@ class QuickbooksConnector(models.Model):
     def action_quickbook_auth(self):
         base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
         rtn_url = f'{base_url}/quickbook_access'
-        url = f"""{self.quick_auth_url}?client_id={self.quick_client_id}&scope=com.intuit.quickbooks.accounting openid profile email phone address&redirect_uri={rtn_url}&response_type=code&state=state"""
+        url = f"""{self.quick_auth_url}?client_id={self.quick_client_id}
+        &scope=com.intuit.quickbooks.accounting openid profile email phone address&redirect_uri={rtn_url}
+        &response_type=code&state=state"""
         self.env.company.quickbook_connector_id = self.id
         return {
             "type": "ir.actions.act_url",
@@ -99,7 +101,6 @@ class QuickbooksConnector(models.Model):
             req_url = f'{url["url"]}/journalentry?minorversion=65'
             headers = url.get('headers')
             headers['Content-Type'] = 'application/json'
-            customer_obj = self.env['res.partner']
             sale_orders = self.env['sale.order'].search([('id', '=', sale.id)])
             for each in sale_orders:
                 for line in each.order_line:
@@ -112,45 +113,43 @@ class QuickbooksConnector(models.Model):
                         price = line.price_unit
                         done = line.done_qty
                         total = done * price
-                        customer = each.partner_id
-                        self.create_journal_entry_data(stock, product, total, sale_orders, account, account_id,
+                        self.create_journal_entry_data(stock, product, total, account, account_id,
                                                        req_url, headers)
 
-    def create_journal_entry_data(self, stock, product, total, sale_orders, account, account_id,  url, headers):
+    def create_journal_entry_data(self, stock, product, total, account, account_id,  url, headers):
         """function for creating journal entry in quickbook"""
 
         req_body = {
                     "Line": [
-                    {
-                      "JournalEntryLineDetail": {
-                        "PostingType": "Debit",
-                        "AccountRef": {
-                          "name": account,
-                          "value": account_id
+                        {
+                            "JournalEntryLineDetail": {
+                                "PostingType": "Debit",
+                                "AccountRef": {
+                                    "name": account,
+                                    "value": account_id
+                                }
+                            },
+                            "DetailType": "JournalEntryLineDetail",
+                            "Amount": total,
+                            "Id": "0",
+                            "Description": product
+                        },
+                        {
+                            "JournalEntryLineDetail": {
+                                "PostingType": "Credit",
+                                "AccountRef": {
+                                    "name": account,
+                                    "value": account_id
+                                }
+                            },
+                            "DetailType": "JournalEntryLineDetail",
+                            "Amount": total,
+                            "Description": product
                         }
-                      },
-                      "DetailType": "JournalEntryLineDetail",
-                      "Amount": total,
-                      "Id": "0",
-                      "Description": product
-                    },
-                    {
-                      "JournalEntryLineDetail": {
-                        "PostingType": "Credit",
-                        "AccountRef": {
-                          "name": account,
-                          "value": account_id
-                        }
-                      },
-                      "DetailType": "JournalEntryLineDetail",
-                      "Amount": total,
-                      "Description": product
-                    }
-                  ]
+                    ]
             }
         response = requests.post(url, data=json.dumps(req_body), headers=headers)
         if response.json():
-            print(response.json(),'rrrrr')
             if response.json().get('JournalEntry'):
                 res = response.json().get('JournalEntry')
                 if 'Id' in res:
@@ -165,7 +164,6 @@ class QuickbooksConnector(models.Model):
                     _("Token expired. Kindly refresh token"))
 
     def delete_journal_entry(self, stock):
-        print(stock, 'stocckeeey')
         url = self.get_import_query()
         if url:
             req_url = f'{url["url"]}/journalentry?operation=delete&minorversion=65'
@@ -175,9 +173,7 @@ class QuickbooksConnector(models.Model):
                       "SyncToken": "0",
                       "Id": stock.quickbook_id
                     }
-            print(req_body,'reeeeqq')
             response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
-            print(response)
             stock.quickbook_id = 0
 
     def action_export_vendor(self, purchase):
@@ -267,7 +263,7 @@ class QuickbooksConnector(models.Model):
                     continue
 
     def create_product_data(self, product, desc, url, headers):
-        print('biii')
+        """function for creating the product item in quickbook"""
         quick_type = {
             'service': 'Service',
             'consu': 'NonInventory',
@@ -315,7 +311,6 @@ class QuickbooksConnector(models.Model):
 
         response = requests.post(url, data=json.dumps(req_body), headers=headers)
         if response.json():
-            print(response.json())
             if response.json().get('Item'):
                 res = response.json().get('Item')
                 if 'Id' in res:
@@ -396,47 +391,9 @@ class QuickbooksConnector(models.Model):
                 raise UserError(
                     _("Token expired. Kindly refresh token"))
 
-    # def action_search_po(self, record):
-    #     url = self.get_import_query()
-    #     if url:
-    #         query = 'SELECT * FROM PurchaseOrder'
-    #         get_url = url['url'] + f'/query?minorversion={self.minor_version}&query={query}'
-    #         data = requests.get(get_url, headers=url['headers'])
-    #
-    #         if data.json() and data.json().get('fault'):
-    #             if data.json().get('fault').get('type') == 'AUTHENTICATION':
-    #                 self.action_refresh_token()
-    #                 data = requests.get(get_url, headers=url['headers'])
-    #
-    #         if data.json() and data.json().get('QueryResponse'):
-    #             purchase_orders = data.json().get('QueryResponse').get('PurchaseOrder')
-    #             record_id = str(record.quickbook_id)
-    #             for po in purchase_orders:
-    #
-    #                 po_id = po['Id']
-    #                 if po_id != record_id:
-    #                     continue
-    #                 else:
-    #                     for bill in po['LinkedTxn']:
-    #                         if bill['TxnId']:
-    #                             bill_id = bill['TxnId']
-    #                             self.action_delete_bill(bill_id)
-    #                     self.action_delete_po(po, record_id)
-
-    # def action_delete_bill(self, bill_id):
-    #     url = self.get_import_query()
-    #     if url:
-    #         req_url = f'{url["url"]}/bill?operation=delete&minorversion=65'
-    #         headers = url.get('headers')
-    #         headers['Content-Type'] = 'application/json'
-    #         req_body = {
-    #                       "SyncToken": "0",
-    #                       "Id": bill_id
-    #                     }
-    #
-    #         response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
-
     def action_delete_po(self, po):
+        """function that delete the so when we cancel the
+        corresponding sale order from the odoo"""
         url = self.get_import_query()
         if url:
             req_url = f'{url["url"]}/purchaseorder?operation=delete&minorversion=65'
@@ -450,6 +407,7 @@ class QuickbooksConnector(models.Model):
             po.quickbook_id = 0
 
     def action_update_po(self, record):
+        """function for updating the po"""
         url = self.get_import_query()
         if url:
             req_url = f'{url["url"]}/purchaseorder?minorversion=65'
@@ -477,7 +435,6 @@ class QuickbooksConnector(models.Model):
             for line in record.order_line:
                 for product in line.product_id:
                     if product.quickbook_id is 0:
-                        print('vbb')
                         desc = product.description_sale
                         self.create_product_item(product, desc)
                 req_body['Line'].append(
@@ -495,21 +452,10 @@ class QuickbooksConnector(models.Model):
                         }
                     }
                 )
-            print(req_body)
             response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
-            print(response)
-            if response.json():
-                print(response.json())
-            #     if response.json().get('PurchaseOrder'):
-            #         res = response.json().get('PurchaseOrder')
-            #         if 'Id' in res:
-            #             record.write({
-            #                 'quickbook_id': res.get('Id'),
-            #                 'qbooks_sync_token': res.get('SyncToken')
-            #             })
-            #             self.env.cr.commit()
 
     def create_product_item(self, product, desc):
+        """function that call the function that create the product item in quickbook"""
         url = self.get_import_query()
         if url:
             req_url = f'{url["url"]}/item?minorversion=4'
@@ -518,6 +464,7 @@ class QuickbooksConnector(models.Model):
             self.create_product_data(product, desc, req_url, headers)
 
     def action_fetch_bill(self):
+        """function that call the function that create the bill"""
         url = self.get_import_query()
         if url:
             query = 'SELECT * FROM Bill'
@@ -530,10 +477,10 @@ class QuickbooksConnector(models.Model):
 
             if data.json() and data.json().get('QueryResponse'):
                 bill = data.json().get('QueryResponse').get('Bill')
-                print(bill)
 
     def action_create_estimate(self, sale, status):
-        print('oii')
+        """function that create an estimate that corresponding
+        to the sale order of odoo"""
         url = self.get_import_query()
         if url:
             req_url = f'{url["url"]}/estimate?minorversion=40'
@@ -591,10 +538,8 @@ class QuickbooksConnector(models.Model):
                     }
 
                 )
-            print(req_body,'reqq')
             response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
             if response.json():
-                print('ress', response.json())
                 if response.json().get('Estimate'):
                     res = response.json().get('Estimate')
                     if 'Id' in res:
@@ -610,6 +555,7 @@ class QuickbooksConnector(models.Model):
                         _("Token expired. Kindly refresh token"))
 
     def action_delete_so(self, record):
+        """function that delete the so"""
         url = self.get_import_query()
         if url:
             req_url = f'{url["url"]}/estimate?operation=delete&minorversion=65'
@@ -623,6 +569,7 @@ class QuickbooksConnector(models.Model):
             record.quickbook_id = 0
 
     def create_customer_data(self, customer):
+        """function that helps to create a customer data in quickbook"""
         url = self.get_import_query()
         if url:
             req_url = f'{url["url"]}/customer?minorversion=40'
@@ -675,11 +622,9 @@ class QuickbooksConnector(models.Model):
                         _("Token expired. Kindly refresh token"))
 
     def create_and_sync_invoices(self, invoice, sale):
-        print(invoice, 'booom')
-        print(sale, 'saleeey')
+        """function that helps to create the invoice in quickbook"""
         if not sale.quickbook_id == 0:
             url = self.get_import_query()
-            print(url,'urll')
             if url:
                 req_url = f'{url["url"]}/invoice?minorversion=65'
                 headers = url.get('headers')
@@ -689,11 +634,11 @@ class QuickbooksConnector(models.Model):
                 req_body = {
                     "Line": [],
                     "CustomerRef": {
+                        "name": customer,
                         "value": customer_code
                     }
                 }
                 for line in invoice.invoice_line_ids:
-                    print(line)
                     amount = line.price_subtotal
                     if line.product_id:
                         if line.product_id.quickbook_id == 0:
@@ -713,11 +658,8 @@ class QuickbooksConnector(models.Model):
                                         }
                         )
 
-                    print(req_body)
-
                 response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
                 if response.json():
-                    print(response.json(), 'response')
                     if response.json().get('Invoice'):
                         res = response.json().get('Invoice')
                         if 'Id' in res:
@@ -732,36 +674,15 @@ class QuickbooksConnector(models.Model):
                         raise UserError(
                             _("Token expired. Kindly refresh token"))
 
-    def sale_order_status_updation(self, sale, invoice):
-        self.delete_the_current_so(sale)
-        status = 'Closed'
-        self.action_create_estimate(sale, status)
-
-        # url = self.get_import_query()
-        # if url:
-        #     req_url = f'{url["url"]}/estimate?minorversion=65'
-        #     headers = url.get('headers')
-        #     headers['Content-Type'] = 'application/json'
-        #     req_body = {
-        #                   "SyncToken": "3",
-        #                   "domain": "QBO",
-        #                   "CustomerMemo": {
-        #                     "value": "An updated memo via full update the second time."
-        #                   },
-        #                   "sparse": True,
-        #                   "Id": sale.quickbook_id,
-        #                   "TxnStatus": "Pending",
-        #                   "MetaData": {
-        #                     "CreateTime": "2014-09-17T11:20:06-07:00",
-        #                     "LastUpdatedTime": "2015-07-24T14:08:04-07:00"
-        #                   }
-        #                 }
-        #     print(req_body)
-        #     response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
-        #     if response.json():
-        #         print(response.json(), 'response')
+    def sale_order_status_updation(self, sales):
+        """function helps to update the sale order"""
+        for sale in sales:
+            self.delete_the_current_so(sale)
+            status = 'Closed'
+            self.action_create_estimate(sale, status)
 
     def delete_the_current_so(self, sale):
+        """function helps to delete the current so"""
         url = self.get_import_query()
         if url:
             req_url = f'{url["url"]}/estimate?operation=delete&minorversion=65'
@@ -772,28 +693,21 @@ class QuickbooksConnector(models.Model):
                       "Id": sale.quickbook_id
                     }
             response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
-    # def action_invoice_button(self):
-    #     print('hii')
-    #     self.action_export_invoice_status()
 
     def action_export_invoice_status(self):
-        print('lloo')
+        """this function is helps to updates the invoice status in odoo.
+         also it helps to update the status of estimate in quickbook"""
         url = self.get_import_query()
-        print(url, 'url')
         if url:
             query = 'select * from Invoice'
-            print(query, 'df')
             get_url = url['url'] + f'/query?minorversion={self.minor_version}&query={query}'
             data = requests.get(get_url, headers=url['headers'])
-            print(data,'dataaaaaa')
             total = 0
             invoice_odoo = self.env['account.move'].search([('quickbook_id', '!=',0)])
-            print(invoice_odoo)
             if data.json() and data.json().get('fault'):
                 if data.json().get('fault').get('type') == 'AUTHENTICATION':
                     self.action_refresh_token()
                     data = requests.get(get_url, headers=url['headers'])
-                    print(data, 'dataa')
             if data.json() and data.json().get('QueryResponse'):
                 invoices_quickbook = data.json().get('QueryResponse').get('Invoice')
                 for invoice in invoice_odoo:
@@ -801,10 +715,7 @@ class QuickbooksConnector(models.Model):
                         # print(invoice_q, 'idcdsvb')
                         qbinvoice_id = int(invoice_q['Id'])
                         if invoice.quickbook_id == qbinvoice_id:
-                            print(invoice, 'invoiceeee')
-                            print(invoice_q,'invoicee___q')
                             if invoice_q['LinkedTxn']:
-                                print('hii')
                                 for txn_type in invoice_q['LinkedTxn']:
                                     if txn_type['TxnType'] == 'Payment':
                                         if invoice.state != 'posted':
@@ -812,13 +723,16 @@ class QuickbooksConnector(models.Model):
                                             invoice.state = 'posted'
                                         if invoice.payment_state != 'paid':
                                             invoice.payment_state = 'paid'
-                        # all_invoice = invoice_odoo.search([('quickbook_id', '=', qbinvoice_id)])
-                        # print(invoice_q['Id'], invoice_q['LinkedTxn'])
-                        # for invoice_o in invoice_odoo:
-                        #     if invoice_o.quickbook_id != 0:
-                        #         print(type(qbinvoice_id))
-                        #         print(type)
-                        #         print(all_invoice,'aaaal')
+                                            invoice.invoice_paid = True
+                                        sale = self.env['sale.order'].search([('name', '=', invoice.invoice_origin)])
+                                        for each in sale.invoice_ids:
+                                            if each.payment_state != 'paid':
+                                                self.invoice_paid = False
+                                            else:
+                                                self.invoice_paid = True
+                                        if self.invoice_paid != False:
+                                            self.sale_order_status_updation(sale)
+
 
 
 
