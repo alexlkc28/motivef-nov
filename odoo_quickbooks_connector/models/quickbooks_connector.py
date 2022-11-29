@@ -650,6 +650,7 @@ class QuickbooksConnector(models.Model):
                           "PrimaryPhone": {
                             "FreeFormNumber": customer.phone
                           },
+                          "CompanyName": customer.name,
                           "BillAddr": {
                             "City": customer.city,
                             "PostalCode": customer.zip,
