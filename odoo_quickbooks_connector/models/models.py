@@ -162,6 +162,7 @@ class AccountMove(models.Model):
 
     quickbook_id = fields.Integer(string='Quickbook ID')
     qbooks_sync_token = fields.Char(string='Quickbook Token')
+    quick_memo = fields.Char(string='Memo')
 
     def button_invoice_sync_qb(self):
         invoice = self
@@ -196,3 +197,9 @@ class StockReturnPicking(models.TransientModel):
             each.return_delivery = True
         print(self.picking_id.return_delivery,'rrec')
         return res
+
+
+class AccountPaymentMethod(models.Model):
+    _inherit = 'account.payment.method'
+
+    quick_id = fields.Integer(string='Quickbook Id')

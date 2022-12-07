@@ -43,9 +43,8 @@ class QuickbooksConnector(models.Model):
     def action_quickbook_auth(self):
         base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
         rtn_url = f'{base_url}/quickbook_access'
-        url = f"""{self.quick_auth_url}?client_id={self.quick_client_id}
-        &scope=com.intuit.quickbooks.accounting openid profile email phone address&redirect_uri={rtn_url}
-        &response_type=code&state=state"""
+        url = f"""{self.quick_auth_url}?client_id={self.quick_client_id}&scope=com.intuit.quickbooks.accounting openid 
+        profile email phone address&redirect_uri={rtn_url}&response_type=code&state=state"""
         self.env.company.quickbook_connector_id = self.id
         return {
             "type": "ir.actions.act_url",
@@ -116,38 +115,38 @@ class QuickbooksConnector(models.Model):
                         self.create_journal_entry_data(stock, product, total, account, account_id,
                                                        req_url, headers)
 
-    def create_journal_entry_data(self, stock, product, total, account, account_id,  url, headers):
+    def create_journal_entry_data(self, stock, product, total, account, account_id, url, headers):
         """function for creating journal entry in quickbook"""
 
         req_body = {
-                    "Line": [
-                        {
-                            "JournalEntryLineDetail": {
-                                "PostingType": "Debit",
-                                "AccountRef": {
-                                    "name": account,
-                                    "value": account_id
-                                }
-                            },
-                            "DetailType": "JournalEntryLineDetail",
-                            "Amount": total,
-                            "Id": "0",
-                            "Description": product
-                        },
-                        {
-                            "JournalEntryLineDetail": {
-                                "PostingType": "Credit",
-                                "AccountRef": {
-                                    "name": account,
-                                    "value": account_id
-                                }
-                            },
-                            "DetailType": "JournalEntryLineDetail",
-                            "Amount": total,
-                            "Description": product
+            "Line": [
+                {
+                    "JournalEntryLineDetail": {
+                        "PostingType": "Debit",
+                        "AccountRef": {
+                            "name": account,
+                            "value": account_id
                         }
-                    ]
-            }
+                    },
+                    "DetailType": "JournalEntryLineDetail",
+                    "Amount": total,
+                    "Id": "0",
+                    "Description": product
+                },
+                {
+                    "JournalEntryLineDetail": {
+                        "PostingType": "Credit",
+                        "AccountRef": {
+                            "name": account,
+                            "value": account_id
+                        }
+                    },
+                    "DetailType": "JournalEntryLineDetail",
+                    "Amount": total,
+                    "Description": product
+                }
+            ]
+        }
         response = requests.post(url, data=json.dumps(req_body), headers=headers)
         if response.json():
             if response.json().get('JournalEntry'):
@@ -170,9 +169,9 @@ class QuickbooksConnector(models.Model):
             headers = url.get('headers')
             headers['Content-Type'] = 'application/json'
             req_body = {
-                      "SyncToken": "0",
-                      "Id": stock.quickbook_id
-                    }
+                "SyncToken": "0",
+                "Id": stock.quickbook_id
+            }
             response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
             stock.quickbook_id = 0
 
@@ -195,17 +194,17 @@ class QuickbooksConnector(models.Model):
         """function for creating the vendor data in quickbook"""
 
         req_body = {
-                "DisplayName": vendor_data.name,
-                "Mobile": {
-                    "FreeFormNumber": vendor_data.mobile
-                },
-                "BillAddr": {
-                    "City": vendor_data.city,
-                    "Country": vendor_data.country_id.name,
-                    "Line1": vendor_data.street,
-                    "PostalCode": vendor_data.zip,
-                },
-            }
+            "DisplayName": vendor_data.name,
+            "Mobile": {
+                "FreeFormNumber": vendor_data.mobile
+            },
+            "BillAddr": {
+                "City": vendor_data.city,
+                "Country": vendor_data.country_id.name,
+                "Line1": vendor_data.street,
+                "PostalCode": vendor_data.zip,
+            },
+        }
         if vendor_data.parent_id:
             req_body.update({"CompanyName": vendor_data.parent_id.name})
         if vendor_data.email:
@@ -215,11 +214,11 @@ class QuickbooksConnector(models.Model):
         if vendor_data.phone:
             req_body.update({"PrimaryPhone": {
                 "FreeFormNumber": vendor_data.phone
-             }})
+            }})
         if vendor_data.mobile:
             req_body.update({"PrimaryPhone": {
                 "FreeFormNumber": vendor_data.mobile
-             }})
+            }})
         if vendor_data.vat:
             req_body.update({"TaxIdentifier": vendor_data.vat})
         if vendor_data.website:
@@ -342,23 +341,23 @@ class QuickbooksConnector(models.Model):
                 total = each.amount_total
                 vendor = each.partner_id.name
                 vendor_id = each.partner_id.quickbook_id
-                self.create_purchase_order_data(total, vendor, vendor_id, purchase_order,  req_url, headers)
+                self.create_purchase_order_data(total, vendor, vendor_id, purchase_order, req_url, headers)
 
     def create_purchase_order_data(self, total, vendor, vendor_id, purchase_order, url, headers):
         """ function for creating purchase order in quickbook """
 
         req_body = {
-                  "TotalAmt": total,
-                    "Line": [],
-                  "APAccountRef": {
-                    "name": "Accounts Payable (A/P)",
-                    "value": "33"
-                  },
-                  "VendorRef": {
-                    "name": vendor,
-                    "value": vendor_id
-                  },
-                }
+            "TotalAmt": total,
+            "Line": [],
+            "APAccountRef": {
+                "name": "Accounts Payable (A/P)",
+                "value": "33"
+            },
+            "VendorRef": {
+                "name": vendor,
+                "value": vendor_id
+            },
+        }
         for line in purchase_order.order_line:
             req_body['Line'].append(
                 {
@@ -400,8 +399,8 @@ class QuickbooksConnector(models.Model):
             headers = url.get('headers')
             headers['Content-Type'] = 'application/json'
             req_body = {
-                      "SyncToken": "0",
-                      "Id": po.quickbook_id,
+                "SyncToken": "0",
+                "Id": po.quickbook_id,
             }
             response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
             po.quickbook_id = 0
@@ -415,23 +414,23 @@ class QuickbooksConnector(models.Model):
             headers['Content-Type'] = 'application/json'
 
             req_body = {
-                          "SyncToken": "0",
-                          "APAccountRef": {
-                            "name": "Accounts Payable (A/P)",
-                            "value": "33"
-                          },
-                          "CurrencyRef": {
-                            "name": "United States Dollar",
-                            "value": "USD"
-                          },
-                          "TotalAmt": record.amount_total,
-                          "Id": record.quickbook_id,
-                          "VendorRef": {
-                            "name": record.partner_id.name,
-                            "value": record.partner_id.quickbook_id
-                          },
-                          "Line": [],
-                        }
+                "SyncToken": "0",
+                "APAccountRef": {
+                    "name": "Accounts Payable (A/P)",
+                    "value": "33"
+                },
+                "CurrencyRef": {
+                    "name": "United States Dollar",
+                    "value": "USD"
+                },
+                "TotalAmt": record.amount_total,
+                "Id": record.quickbook_id,
+                "VendorRef": {
+                    "name": record.partner_id.name,
+                    "value": record.partner_id.quickbook_id
+                },
+                "Line": [],
+            }
             for line in record.order_line:
                 for product in line.product_id:
                     if product.quickbook_id is 0:
@@ -494,31 +493,31 @@ class QuickbooksConnector(models.Model):
                     desc = line.name
                     self.create_product_item(line.product_id, desc)
             req_body = {
-                          "TotalAmt": sale.amount_total,
-                          "Line": [],
-                          "BillEmail": {
-                            "Address": sale.partner_id.email
-                          },
-                          'TxnStatus': status,
-                          "CustomerMemo": {
-                            "value": "Thank you for your business and have a great day!"
-                          },
-                          "ShipAddr": {
-                            "City": sale.partner_id.city,
-                            "Line1": sale.partner_id.street,
-                            "PostalCode": sale.partner_id.zip,
-                          },
-                          "BillAddr": {
-                            "City": sale.partner_id.city,
-                            "Line1": sale.partner_id.street,
-                            "PostalCode": sale.partner_id.zip,
-                          },
+                "TotalAmt": sale.amount_total,
+                "Line": [],
+                "BillEmail": {
+                    "Address": sale.partner_id.email
+                },
+                'TxnStatus': status,
+                "CustomerMemo": {
+                    "value": "Thank you for your business and have a great day!"
+                },
+                "ShipAddr": {
+                    "City": sale.partner_id.city,
+                    "Line1": sale.partner_id.street,
+                    "PostalCode": sale.partner_id.zip,
+                },
+                "BillAddr": {
+                    "City": sale.partner_id.city,
+                    "Line1": sale.partner_id.street,
+                    "PostalCode": sale.partner_id.zip,
+                },
 
-                          "CustomerRef": {
-                            "name": sale.partner_id.name,
-                            "value": sale.partner_id.quickbook_id
-                          },
-                        }
+                "CustomerRef": {
+                    "name": sale.partner_id.name,
+                    "value": sale.partner_id.quickbook_id
+                },
+            }
             for line in sale.order_line:
                 req_body['Line'].append(
                     {
@@ -587,24 +586,26 @@ class QuickbooksConnector(models.Model):
                 customer.street = 'New York'
             if not customer.country_id:
                 customer.country_id.name = 'USA'
+            if not customer.x_studio_customer_number:
+                customer.x_studio_customer_number = '000'
             req_body = {
-                          "FullyQualifiedName": customer.name,
-                          "PrimaryEmailAddr": {
-                            "Address": customer.email
-                          },
-                          "DisplayName": customer.name,
-                          "Notes": "Here are other details.",
-                          "PrimaryPhone": {
-                            "FreeFormNumber": customer.phone
-                          },
-                          "CompanyName": customer.name,
-                          "BillAddr": {
-                            "City": customer.city,
-                            "PostalCode": customer.zip,
-                            "Line1": customer.street,
-                            "Country": customer.country_id.name
-                          },
-                        }
+                "FullyQualifiedName": customer.name,
+                "PrimaryEmailAddr": {
+                    "Address": customer.email
+                },
+                "DisplayName": customer.name,
+                "Notes": customer.x_studio_customer_number,
+                "PrimaryPhone": {
+                    "FreeFormNumber": customer.phone
+                },
+                "CompanyName": customer.name,
+                "BillAddr": {
+                    "City": customer.city,
+                    "PostalCode": customer.zip,
+                    "Line1": customer.street,
+                    "Country": customer.country_id.name
+                },
+            }
             response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
             if response.json():
                 if response.json().get('Customer'):
@@ -646,16 +647,16 @@ class QuickbooksConnector(models.Model):
                         item_name = line.product_id.name
                         item_code = line.product_id.quickbook_id
                         req_body['Line'].append(
-                                        {
-                                          "DetailType": "SalesItemLineDetail",
-                                          "Amount": amount,
-                                          "SalesItemLineDetail": {
-                                            "ItemRef": {
-                                              "name": item_name,
-                                              "value": item_code
-                                            }
-                                          }
-                                        }
+                            {
+                                "DetailType": "SalesItemLineDetail",
+                                "Amount": amount,
+                                "SalesItemLineDetail": {
+                                    "ItemRef": {
+                                        "name": item_name,
+                                        "value": item_code
+                                    }
+                                }
+                            }
                         )
 
                 response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
@@ -689,21 +690,21 @@ class QuickbooksConnector(models.Model):
             headers = url.get('headers')
             headers['Content-Type'] = 'application/json'
             req_body = {
-                      "SyncToken": "3",
-                      "Id": sale.quickbook_id
-                    }
+                "SyncToken": "3",
+                "Id": sale.quickbook_id
+            }
             response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
 
     def action_export_invoice_status(self):
         """this function is helps to updates the invoice status in odoo.
          also it helps to update the status of estimate in quickbook"""
         url = self.get_import_query()
+        print(url, 'urrrrl')
         if url:
             query = 'select * from Invoice'
             get_url = url['url'] + f'/query?minorversion={self.minor_version}&query={query}'
             data = requests.get(get_url, headers=url['headers'])
-            total = 0
-            invoice_odoo = self.env['account.move'].search([('quickbook_id', '!=',0)])
+            invoice_odoo = self.env['account.move'].search([('quickbook_id', '!=', 0)])
             if data.json() and data.json().get('fault'):
                 if data.json().get('fault').get('type') == 'AUTHENTICATION':
                     self.action_refresh_token()
@@ -723,19 +724,80 @@ class QuickbooksConnector(models.Model):
                                             invoice.state = 'posted'
                                         if invoice.payment_state != 'paid':
                                             invoice.payment_state = 'paid'
-                                            invoice.invoice_paid = True
+                                            self.invoice_paid = True
                                         sale = self.env['sale.order'].search([('name', '=', invoice.invoice_origin)])
                                         for each in sale.invoice_ids:
                                             if each.payment_state != 'paid':
                                                 self.invoice_paid = False
                                             else:
                                                 self.invoice_paid = True
+
                                         if self.invoice_paid != False:
                                             self.sale_order_status_updation(sale)
+                                            self.action_export_payment_status()
 
+    def action_fetch_payment_methods(self):
+        """function to get the payment methods and its
+        id's from quickbook to odoo payment method"""
+        url = self.get_import_query()
+        if url:
+            query = 'select * from PaymentMethod'
+            get_url = url['url'] + f'/query?minorversion={self.minor_version}&query={query}'
+            data = requests.get(get_url, headers=url['headers'])
+            total = 0
+            payment_method_obj = self.env['account.payment.method'].search([])
+            if data.json() and data.json().get('fault'):
+                if data.json().get('fault').get('type') == 'AUTHENTICATION':
+                    self.action_refresh_token()
+                    data = requests.get(get_url, headers=url['headers'])
+            if data.json() and data.json().get('QueryResponse'):
+                payment_method_quickbook = data.json().get('QueryResponse').get('PaymentMethod')
+                print(payment_method_quickbook, 'aaaaa')
+                for payment_method in payment_method_quickbook:
+                    exist = payment_method_obj.search([('quick_id', '=', payment_method.get('Id'))])
+                    if exist:
+                        continue
+                    payment_vals = {
+                        'quick_id': payment_method.get('Id'),
+                        'name': payment_method.get('Name'),
+                        'payment_type': 'inbound',
+                        'code': 'manual',
+                    }
+                    print(payment_vals, 'payyy')
+                    payment_method_obj.create(payment_vals)
 
-
-
-
-
-
+    def action_export_payment_status(self):
+        """this function is helps to updates the invoice status in odoo.
+         also it helps to update the status of estimate in quickbook"""
+        url = self.get_import_query()
+        if url:
+            query = 'select * from Payment'
+            get_url = url['url'] + f'/query?minorversion={self.minor_version}&query={query}'
+            data = requests.get(get_url, headers=url['headers'])
+            total = 0
+            if data.json() and data.json().get('fault'):
+                if data.json().get('fault').get('type') == 'AUTHENTICATION':
+                    self.action_refresh_token()
+                    data = requests.get(get_url, headers=url['headers'])
+            if data.json() and data.json().get('QueryResponse'):
+                payment_quickbook = data.json().get('QueryResponse').get('Payment')
+                for payment in payment_quickbook:
+                    print(payment)
+                    payment_ref = payment.get('PaymentRefNum')
+                    payment_method_ref = payment.get('PaymentMethodRef')
+                    if payment_method_ref and payment_ref:
+                        pay_ref = payment_ref
+                        pay_method = payment_method_ref['value']
+                        pay_m = self.env['account.payment.method'].search([('quick_id', '=', int(pay_method))])
+                        LineTxn = payment.get('Line')
+                        if LineTxn:
+                            for each in LineTxn:
+                                txn_details = each['LinkedTxn']
+                                if txn_details:
+                                    for txn in txn_details:
+                                        if txn['TxnType'] == 'Invoice':
+                                            txn_id = txn['TxnId']
+                                            print(txn_id)
+                                            inv = self.env['account.move'].search([('quickbook_id', '=', int(txn_id))])
+                                            print(inv)
+                                            inv.quick_memo = str(pay_ref) + ' ' + str(pay_m.name)

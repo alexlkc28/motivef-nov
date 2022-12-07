@@ -54,6 +54,12 @@
                                 <group>
                                     <button name="action_export_invoice_status" string="Update Invoice Status"
                                 type="object" class="oe_highlight"/>
+                                    <button name="action_fetch_payment_methods" string="Fetch Payment Methods"
+                                type="object" class="oe_highlight"/>
+                                </group>
+                                <group>
+<!--                                    <button name="action_export_payment_status" string="Fetch Payments"-->
+<!--                                type="object" class="oe_highlight"/>-->
                                 </group>
                             </page>
                         </notebook>

@@ -13,9 +13,7 @@ class ModelName(http.Controller):
         if kw.get('code'):
             print(self,'tfygu')
             quickbooks_id = request.env.ref('odoo_quickbooks_connector.quick_data')
-            # quickbooks_id = request.env['quickbooks.connector'].search([])
-            # # print(quickbooks_id,'quicckkkbookeey')
-            # # print(quicks_id,'quicckokeey')
+            print(quickbooks_id,'www')
             quickbooks_id.write({
                 'quick_auth_code': kw.get('code'),
                 'quick_realm_id': kw.get('realmId')
