@@ -13,13 +13,10 @@ class StockPicking(models.Model):
 
         sale = self.env['sale.order'].search([('picking_ids', '=', self.id)])
         stock = self
-        print(self.return_delivery, 'dell')
         if self.return_delivery == True:
-            print('yeees')
             self.env['quickbooks.connector'].search(
                 [('id', '=', self.env.company.quickbook_connector_id)]).delete_journal_entry(stock)
         else:
-            print('boiib')
             for each in self.move_line_ids_without_package:
                 product = each.product_id
                 qty = each.qty_done
@@ -92,8 +89,8 @@ class StockImmediatePicking(models.TransientModel):
                 if picking.state != 'assigned':
                     picking.action_assign()
                     if picking.state != 'assigned':
-                        raise UserError(
-                            _("Could not reserve all requested products. Please use the \'Mark as Todo\' button to handle the reservation manually."))
+                        raise UserError(_("Could not reserve all requested products. Please use the \'Mark as Todo\'"
+                                          " button to handle the reservation manually."))
             for move in picking.move_lines.filtered(lambda m: m.state not in ['done', 'cancel']):
                 for move_line in move.move_line_ids:
                     move_line.qty_done = move_line.product_uom_qty
@@ -171,31 +168,15 @@ class AccountMove(models.Model):
             self.env['quickbooks.connector'].search([('id', '=', self.env.company.quickbook_connector_id)]). \
                 create_and_sync_invoices(invoice, sale)
 
-    # def button_invoice_status_updation(self):
-    #     self.env['quickbooks.connector'].search([('id', '=', self.env.company.quickbook_connector_id)]). \
-    #         action_export_invoice_status()
-
-    # def action_post(self):
-    #     res = super(AccountMove, self).action_post()
-    #     invoice = self
-    #     sale = self.env['sale.order'].search([('name', '=', invoice.invoice_origin)])
-    #     if not self.quickbook_id == 0:
-    #         self.env['quickbooks.connector'].search([('id', '=', self.env.company.quickbook_connector_id)]). \
-    #         sale_order_status_updation(sale, invoice)
-    #     return res
-
 
 class StockReturnPicking(models.TransientModel):
     _inherit = 'stock.return.picking'
 
     def create_returns(self):
-        print('hhiii')
         res = super(StockReturnPicking, self).create_returns()
-        print('hhhhhhhh')
         stocks = self.env['stock.picking'].search([('group_id', '=', self.picking_id.group_id.id)])
         for each in stocks:
             each.return_delivery = True
-        print(self.picking_id.return_delivery,'rrec')
         return res
 
 
@@ -203,3 +184,13 @@ class AccountPaymentMethod(models.Model):
     _inherit = 'account.payment.method'
 
     quick_id = fields.Integer(string='Quickbook Id')
+
+
+class ResCompany(models.Model):
+    _inherit = 'res.company'
+
+    receiver = fields.Char(string='Receive To')
+    sale_count = fields.Integer(string='Total No.of Sale Synced: ')
+    purchase_count = fields.Integer(string='Total No.of PO synced: ')
+    invoice_count = fields.Integer(string='Total No.of invoices Synced: ')
+

@@ -28,4 +28,25 @@
             </xpath>
         </field>
     </record>
+
+    <record model="ir.ui.view" id="res_company_form">
+        <field name="name">res.company.inherit</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='general_info']" position="after">
+                <page name="quickbook_info" string="Quickbook Info">
+                    <group>
+                        <group>
+                            <field name="receiver"/>
+                            <field name="sale_count"/>
+                            <field name="purchase_count"/>
+                            <field name="invoice_count"/>
+<!--                            <button name="%(action_send_email_with_synced_report)" type="action" string="Send Report"/>-->
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
 </odoo>
