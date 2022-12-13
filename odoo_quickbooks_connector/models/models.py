@@ -117,7 +117,7 @@ class SaleOrder(models.Model):
     quickbook_connector_id = fields.Integer(string='Quickbook Connector ID',
                                             help="The id represents the quickbook connector id", default=1)
     qbooks_sync_token = fields.Char(string='Sync Token')
-    # quick_product_id = fields.Integer(string='Product ID')
+    quick_product_id = fields.Integer(string='Product ID')
 
     def action_confirm(self):
         res = super(SaleOrder, self).action_confirm()

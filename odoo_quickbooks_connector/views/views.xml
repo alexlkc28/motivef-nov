@@ -12,7 +12,7 @@
                 <group name="quick_details" string="Quickbook Details">
                     <field name="quickbook_id"/>
                     <field name="quick_memo"/>
-<!--                    <field name="quick_product_id"/>-->
+                    <field name="quick_product_id"/>
                 </group>
             </xpath>
         </field>
