@@ -169,8 +169,8 @@ class AccountMove(models.Model):
         sale = self.env['sale.order'].search([('name', '=', invoice.invoice_origin)])
         if invoice.quickbook_id == 0:
             print('lloo')
-            # self.env['quickbooks.connector'].search([('id', '=', self.env.company.quickbook_connector_id)]). \
-            #     create_and_sync_invoices(invoice, sale)
+            self.env['quickbooks.connector'].search([('id', '=', self.env.company.quickbook_connector_id)]). \
+                create_and_sync_invoices(invoice, sale)
 
 
 class StockReturnPicking(models.TransientModel):
