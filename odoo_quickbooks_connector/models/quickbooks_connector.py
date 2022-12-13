@@ -637,114 +637,114 @@ class QuickbooksConnector(models.Model):
                     print('oiuy')
                     self.action_refresh_token()
 
-    def create_and_sync_invoices(self, invoice, sale):
-        """function that helps to create the invoice in quickbook"""
-        if not sale.quickbook_id == 0:
-            url = self.get_import_query()
-            print(url)
-            if url:
-                req_url = f'{url["url"]}/invoice?minorversion=65'
-                headers = url.get('headers')
-                headers['Content-Type'] = 'application/json'
-                if invoice.partner_id.parent_id:
-                    customer = invoice.partner_id.parent_id.name
-                    customer_code = invoice.partner_id.parent_id.quickbook_id
-                    print(customer)
-                else:
-                    customer = invoice.partner_id.name
-                    customer_code = invoice.partner_id.quickbook_id
-                req_body = {
-                    "Line": [],
-                    "CustomerRef": {
-                        "name": customer,
-                        "value": customer_code
-                    }
-                }
-                print('dfgh')
-                amount = invoice.amount_total
-                if sale.quick_product_id == 0:
-                    self.create_sale_number_product(sale, invoice)
-                    print('heey')
-                item_name = sale.name
-                item_code = sale.quick_product_id
-                print(item_code, 'iteeem')
-                req_body['Line'].append(
-                    {
-                        "DetailType": "SalesItemLineDetail",
-                        "Amount": amount,
-                        "SalesItemLineDetail": {
-                            "ItemRef": {
-                                "name": item_name,
-                                "value": item_code
-                            }
-                        }
-                    }
-                )
-
-                response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
-                print(response)
-                if response.json():
-                    print(response.json(), 'llooo' )
-                    if response.json().get('Invoice'):
-                        res = response.json().get('Invoice')
-                        if 'Id' in res:
-                            invoice.write({
-                                'quickbook_id': res.get('Id'),
-                                'qbooks_sync_token': res.get('SyncToken')
-                            })
-                            self.env.cr.commit()
-
-                    elif response.json().get('fault') and response.json().get('fault').get('error')[0].get(
-                            'code') == '3200':
-                        self.action_refresh_token()
-
-    def create_sale_number_product(self, sale, invoice):
-        ''' function to create sale order number as a product'''
-        print('hiii', sale)
-        url = self.get_import_query()
-        if url:
-            req_url = f'{url["url"]}/item?minorversion=4'
-            headers = url.get('headers')
-            headers['Content-Type'] = 'application/json'
-            req_body = {
-                "Name": sale.name,
-                "Description": sale.name,
-                "Active": True,
-                "UnitPrice": 0,
-                "PurchaseCost": 0,
-                "Type": 'Service',
-                "PurchaseDesc": sale.name,
-                "IncomeAccountRef": {
-                    "value": 32,
-                },
-                "AssetAccountRef": {
-                    "value": 32,
-                },
-                "ExpenseAccountRef": {
-                    "value": 32
-                },
-                "InvStartDate": "2022-03-19"
-            }
-            response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
-            if response.json():
-                print(response.json(), 'resss')
-                if response.json().get('Item'):
-                    res = response.json().get('Item')
-                    if 'Id' in res:
-                        sale.write({
-                            'quick_product_id': res.get('Id'),
-                        })
-
-                        self.env.cr.commit()
-
-                elif response.json().get('Fault').get('Error')[0].get('code') == '6240':
-                    raise UserError(
-                        _("Duplicate name exist error for %s. Quickbooks doesnot allow duplicate names. Please change name,"
-                          " or please provide the quickbook ID" % sale.name))
-                elif response.json().get('fault') and response.json().get('fault').get('error')[0].get(
-                        'code') == '3200':
-                    print('dfg')
-                    self.action_refresh_token()
+    # def create_and_sync_invoices(self, invoice, sale):
+    #     """function that helps to create the invoice in quickbook"""
+    #     if not sale.quickbook_id == 0:
+    #         url = self.get_import_query()
+    #         print(url)
+    #         if url:
+    #             req_url = f'{url["url"]}/invoice?minorversion=65'
+    #             headers = url.get('headers')
+    #             headers['Content-Type'] = 'application/json'
+    #             if invoice.partner_id.parent_id:
+    #                 customer = invoice.partner_id.parent_id.name
+    #                 customer_code = invoice.partner_id.parent_id.quickbook_id
+    #                 print(customer)
+    #             else:
+    #                 customer = invoice.partner_id.name
+    #                 customer_code = invoice.partner_id.quickbook_id
+    #             req_body = {
+    #                 "Line": [],
+    #                 "CustomerRef": {
+    #                     "name": customer,
+    #                     "value": customer_code
+    #                 }
+    #             }
+    #             print('dfgh')
+    #             amount = invoice.amount_total
+    #             if sale.quick_product_id == 0:
+    #                 self.create_sale_number_product(sale, invoice)
+    #                 print('heey')
+    #             item_name = sale.name
+    #             item_code = sale.quick_product_id
+    #             print(item_code, 'iteeem')
+    #             req_body['Line'].append(
+    #                 {
+    #                     "DetailType": "SalesItemLineDetail",
+    #                     "Amount": amount,
+    #                     "SalesItemLineDetail": {
+    #                         "ItemRef": {
+    #                             "name": item_name,
+    #                             "value": item_code
+    #                         }
+    #                     }
+    #                 }
+    #             )
+    #
+    #             response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
+    #             print(response)
+    #             if response.json():
+    #                 print(response.json(), 'llooo' )
+    #                 if response.json().get('Invoice'):
+    #                     res = response.json().get('Invoice')
+    #                     if 'Id' in res:
+    #                         invoice.write({
+    #                             'quickbook_id': res.get('Id'),
+    #                             'qbooks_sync_token': res.get('SyncToken')
+    #                         })
+    #                         self.env.cr.commit()
+    #
+    #                 elif response.json().get('fault') and response.json().get('fault').get('error')[0].get(
+    #                         'code') == '3200':
+    #                     self.action_refresh_token()
+    #
+    # def create_sale_number_product(self, sale, invoice):
+    #     ''' function to create sale order number as a product'''
+    #     print('hiii', sale)
+    #     url = self.get_import_query()
+    #     if url:
+    #         req_url = f'{url["url"]}/item?minorversion=4'
+    #         headers = url.get('headers')
+    #         headers['Content-Type'] = 'application/json'
+    #         req_body = {
+    #             "Name": sale.name,
+    #             "Description": sale.name,
+    #             "Active": True,
+    #             "UnitPrice": 0,
+    #             "PurchaseCost": 0,
+    #             "Type": 'Service',
+    #             "PurchaseDesc": sale.name,
+    #             "IncomeAccountRef": {
+    #                 "value": 32,
+    #             },
+    #             "AssetAccountRef": {
+    #                 "value": 32,
+    #             },
+    #             "ExpenseAccountRef": {
+    #                 "value": 32
+    #             },
+    #             "InvStartDate": "2022-03-19"
+    #         }
+    #         response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
+    #         if response.json():
+    #             print(response.json(), 'resss')
+    #             if response.json().get('Item'):
+    #                 res = response.json().get('Item')
+    #                 if 'Id' in res:
+    #                     sale.write({
+    #                         'quick_product_id': res.get('Id'),
+    #                     })
+    #
+    #                     self.env.cr.commit()
+    #
+    #             elif response.json().get('Fault').get('Error')[0].get('code') == '6240':
+    #                 raise UserError(
+    #                     _("Duplicate name exist error for %s. Quickbooks doesnot allow duplicate names. Please change name,"
+    #                       " or please provide the quickbook ID" % sale.name))
+    #             elif response.json().get('fault') and response.json().get('fault').get('error')[0].get(
+    #                     'code') == '3200':
+    #                 print('dfg')
+    #                 self.action_refresh_token()
 
 
     def sale_order_status_updation(self, sales):
