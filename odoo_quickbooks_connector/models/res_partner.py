@@ -5,9 +5,9 @@ class ResPartner(models.Model):
     _inherit = 'res.partner'
 
     quickbook_connector_id = fields.Integer(string='Quickbook Connector ID:', default=1)
-    quickbook_id = fields.Integer(string='Quickbook ID:', store=True)
+    quickbook_id = fields.Integer(string='Quickbook ID:')
     qbooks_sync_token = fields.Char(string='Sync Token')
-    is_quickbook_partner = fields.Boolean(string='From QB', default=False)
+    # is_quickbook_partner = fields.Boolean(string='From QB', default=False)
 
 
 class ResComapny(models.Model):

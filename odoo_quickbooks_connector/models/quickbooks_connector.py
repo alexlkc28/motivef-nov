@@ -278,7 +278,7 @@ class QuickbooksConnector(models.Model):
         if product.quickbook_expense_account_id == 0:
             raise ValidationError('Please fill the expense account in product form')
         req_body = {
-            "Name": product.name,
+            "Name": product.name + str(product.id),
             "Description": desc,
             "Active": True,
             "UnitPrice": product.list_price,
@@ -646,13 +646,42 @@ class QuickbooksConnector(models.Model):
                 req_url = f'{url["url"]}/invoice?minorversion=65'
                 headers = url.get('headers')
                 headers['Content-Type'] = 'application/json'
-                if invoice.partner_id.parent_id:
-                    customer = invoice.partner_id.parent_id.name
-                    customer_code = invoice.partner_id.parent_id.quickbook_id
-                    print(customer)
-                else:
-                    customer = invoice.partner_id.name
-                    customer_code = invoice.partner_id.quickbook_id
+                # if invoice.partner_id.parent_id:
+                #     customer = invoice.partner_id.parent_id.name
+                #     customer_code = invoice.partner_id.parent_id.quickbook_id
+                #     print(customer)
+                # else:
+                #     customer = invoice.partner_id.name
+                #     customer_code = invoice.partner_id.quickbook_id
+                # req_body = {
+                #     "Line": [],
+                #     "CustomerRef": {
+                #         "name": customer,
+                #         "value": customer_code
+                #     }
+                # }
+                # print('dfgh')
+                # amount = invoice.amount_total
+                # if sale.quick_product_id == 0:
+                #     self.create_sale_number_product(sale, invoice)
+                #     print('heey')
+                # item_name = sale.name
+                # item_code = sale.quick_product_id
+                # print(item_code, 'iteeem')
+                # req_body['Line'].append(
+                #     {
+                #         "DetailType": "SalesItemLineDetail",
+                #         "Amount": amount,
+                #         "SalesItemLineDetail": {
+                #             "ItemRef": {
+                #                 "name": item_name,
+                #                 "value": item_code
+                #             }
+                #         }
+                #     }
+                # )
+                customer = invoice.partner_id.name
+                customer_code = invoice.partner_id.quickbook_id
                 req_body = {
                     "Line": [],
                     "CustomerRef": {
@@ -660,26 +689,25 @@ class QuickbooksConnector(models.Model):
                         "value": customer_code
                     }
                 }
-                print('dfgh')
-                amount = invoice.amount_total
-                if sale.quick_product_id == 0:
-                    self.create_sale_number_product(sale, invoice)
-                    print('heey')
-                item_name = sale.name
-                item_code = sale.quick_product_id
-                print(item_code, 'iteeem')
-                req_body['Line'].append(
-                    {
-                        "DetailType": "SalesItemLineDetail",
-                        "Amount": amount,
-                        "SalesItemLineDetail": {
-                            "ItemRef": {
-                                "name": item_name,
-                                "value": item_code
+                for line in invoice.invoice_line_ids:
+                    amount = line.price_subtotal
+                    if line.product_id:
+                        if line.product_id.quickbook_id == 0:
+                            self.create_product_item(line.product_id, line.name)
+                        item_name = line.product_id.name
+                        item_code = line.product_id.quickbook_id
+                        req_body['Line'].append(
+                            {
+                                "DetailType": "SalesItemLineDetail",
+                                "Amount": amount,
+                                "SalesItemLineDetail": {
+                                    "ItemRef": {
+                                        "name": item_name,
+                                        "value": item_code
+                                    }
+                                }
                             }
-                        }
-                    }
-                )
+                        )
 
                 response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
                 print(response)
@@ -698,55 +726,55 @@ class QuickbooksConnector(models.Model):
                             'code') == '3200':
                         self.action_refresh_token()
 
-    def create_sale_number_product(self, sale, invoice):
-        ''' function to create sale order number as a product'''
-        print('hiii', sale)
-        url = self.get_import_query()
-        if url:
-            req_url = f'{url["url"]}/item?minorversion=4'
-            headers = url.get('headers')
-            headers['Content-Type'] = 'application/json'
-            req_body = {
-                "Name": sale.name,
-                "Description": sale.name,
-                "Active": True,
-                "UnitPrice": 0,
-                "PurchaseCost": 0,
-                "Type": 'Service',
-                "PurchaseDesc": sale.name,
-                "IncomeAccountRef": {
-                    "value": 32,
-                },
-                "AssetAccountRef": {
-                    "value": 32,
-                },
-                "ExpenseAccountRef": {
-                    "value": 32
-                },
-                "InvStartDate": "2022-03-19"
-            }
-            response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
-            if response.json():
-                print(response.json(), 'resss')
-                if response.json().get('Item'):
-                    res = response.json().get('Item')
-                    if 'Id' in res:
-                        sale.write({
-                            'quick_product_id': res.get('Id'),
-                        })
-
-                        self.env.cr.commit()
-
-                elif response.json().get('Fault').get('Error')[0].get('code') == '6240':
-                    raise UserError(
-                        _("Duplicate name exist error for %s. Quickbooks doesnot allow duplicate names. Please change name,"
-                          " or please provide the quickbook ID" % sale.name))
-                elif response.json().get('fault') and response.json().get('fault').get('error')[0].get(
-                        'code') == '3200':
-                    print('dfg')
-                    self.action_refresh_token()
-
-
+#     def create_sale_number_product(self, sale, invoice):
+#         ''' function to create sale order number as a product'''
+#         print('hiii', sale)
+#         url = self.get_import_query()
+#         if url:
+#             req_url = f'{url["url"]}/item?minorversion=4'
+#             headers = url.get('headers')
+#             headers['Content-Type'] = 'application/json'
+#             req_body = {
+#                 "Name": sale.name,
+#                 "Description": sale.name,
+#                 "Active": True,
+#                 "UnitPrice": 0,
+#                 "PurchaseCost": 0,
+#                 "Type": 'Service',
+#                 "PurchaseDesc": sale.name,
+#                 "IncomeAccountRef": {
+#                     "value": 32,
+#                 },
+#                 "AssetAccountRef": {
+#                     "value": 32,
+#                 },
+#                 "ExpenseAccountRef": {
+#                     "value": 32
+#                 },
+#                 "InvStartDate": "2022-03-19"
+#             }
+#             response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
+#             if response.json():
+#                 print(response.json(), 'resss')
+#                 if response.json().get('Item'):
+#                     res = response.json().get('Item')
+#                     if 'Id' in res:
+#                         sale.write({
+#                             'quick_product_id': res.get('Id'),
+#                         })
+#
+#                         self.env.cr.commit()
+#
+#                 elif response.json().get('Fault').get('Error')[0].get('code') == '6240':
+#                     raise UserError(
+#                         _("Duplicate name exist error for %s. Quickbooks doesnot allow duplicate names. Please change name,"
+#                           " or please provide the quickbook ID" % sale.name))
+#                 elif response.json().get('fault') and response.json().get('fault').get('error')[0].get(
+#                         'code') == '3200':
+#                     print('dfg')
+#                     self.action_refresh_token()
+#
+#
     def sale_order_status_updation(self, sales):
         """function helps to update the sale order"""
         for sale in sales:
@@ -877,236 +905,236 @@ class QuickbooksConnector(models.Model):
                                             inv.quick_memo = str(pay_ref) + ' ' + str(pay_m.name)
 
 
-# ----------------------------- function using scheduled action --------------------------------------#
-    def create_item_in_qb(self):
-        """function to create product in quickbook"""
-        url = self.env['quickbooks.connector'].search([('id', '=', self.env.company.quickbook_connector_id)]).\
-            get_import_query()
-        print(url,'urllll')
-        if url:
-            print(url, 'urll')
-            req_url = f'{url["url"]}/item?minorversion=4'
-            headers = url.get('headers')
-            headers['Content-Type'] = 'application/json'
-            product_obj = self.env['product.product'].search([])
-            for product in product_obj:
-                if product.quickbook_id !=0:
-                    continue
-                else:
-                    quick_type = {
-                        'service': 'Service',
-                        'consu': 'NonInventory',
-                        'product': 'Inventory',
-                    }
-                    if product.quickbook_income_account_id == 0:
-                        raise ValidationError('Please fill the income account in product form')
-                    if product.quickbook_asset_account_id == 0:
-                        raise ValidationError('Please fill the asset account in product form')
-                    if product.quickbook_expense_account_id == 0:
-                        raise ValidationError('Please fill the expense account in product form')
-                    req_body = {
-                        "Name": product.name + str(product.id),
-                        "Description": product.name,
-                        "Active": True,
-                        "UnitPrice": product.list_price,
-                        "PurchaseCost": product.standard_price,
-                        "Type": quick_type.get(product.type),
-                        "PurchaseDesc": product.name,
-                        "IncomeAccountRef": {
-                            "value": product.quickbook_income_account_id,
-                            "name": product.quickbook_income_account
-                        },
-                        "AssetAccountRef": {
-                            "value": product.quickbook_asset_account_id,
-                            "name": product.quickbook_asset_account
-                        },
-                        "ExpenseAccountRef": {
-                            "name": product.quickbook_expense_account,
-                            "value": product.quickbook_expense_account_id
-                        },
-                        "InvStartDate": "2022-03-19"
-                    }
-                    if quick_type.get(product.type) == 'Inventory':
-                        quantity = self.env['stock.quant'].search([]).filtered(
-                            lambda r: r.product_id.id == product.id and r.quantity > 0).mapped(
-                            'quantity')
-                        if quantity:
-                            req_body.update({"TrackQtyOnHand": True,
-                                             "QtyOnHand": sum(quantity)
-                                             })
-                        else:
-                            raise UserError(
-                                _("Add onhand quantity for %s" % product.name))
-
-                    response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
-                    if response.json():
-                        if response.json().get('Item'):
-                            res = response.json().get('Item')
-                            if 'Id' in res:
-                                product.write({
-                                    'quickbook_id': res.get('Id'),
-                                    'qbooks_sync_token': res.get('SyncToken')
-                                })
-                                self.env.cr.commit()
-
-                        elif response.json().get('Fault').get('Error')[0].get('code') == '6240':
-                            raise UserError(
-                                _("Duplicate name exist error for %s. Quickbooks doesnot allow duplicate names. Please change name,"
-                                  " or please provide the quickbook ID" % product.name))
-                        elif response.json().get('fault') and response.json().get('fault').get('error')[0].get(
-                                'code') == '3200':
-                            print('dfg')
-                            self.action_refresh_token()
-
-    def fetch_products_from_quickbook(self):
-        """function to fetch all the products from quickbook"""
-        url = self.env['quickbooks.connector'].search([('id', '=', self.env.company.quickbook_connector_id)]).\
-            get_import_query()
-        if url:
-            query = 'select * from Item'
-            get_url = url['url'] + f'/query?minorversion={self.minor_version}&query={query}'
-            data = requests.get(get_url, headers=url['headers'])
-            product_obj = self.env['product.product'].search([])
-            if data.json() and data.json().get('fault'):
-                if data.json().get('fault').get('type') == 'AUTHENTICATION':
-                    self.action_refresh_token()
-                    data = requests.get(get_url, headers=url['headers'])
-            if data.json() and data.json().get('QueryResponse'):
-                item_quickbook = data.json().get('QueryResponse').get('Item')
-                for item in item_quickbook:
-                    exist = product_obj.search([('quickbook_id', '=', int(item.get('Id')))])
-                    if exist:
-                        continue
-                    else:
-                        name_exist = product_obj.search([('name', '=', item.get('Name'))])
-                        if name_exist:
-                            for prod in name_exist:
-                                if prod.name == item.get('Name'):
-                                    prod.quickbook_id = int(item.get('Id'))
-                        else:
-                            quick_type = {
-                                'Service': 'service',
-                                'NonInventory':'consu',
-                                'Inventory':'product',
-                            }
-                            print('jjj', quick_type.get(item.get('Type')))
-                            quick_id = int(item.get('Id'))
-                            print(type(quick_id))
-
-                            product_vals = {
-                                'name': item.get('Name'),
-                                'type': quick_type.get(item.get('Type')),
-                                'is_quickbook_product': True,
-                                'quickbook_id': quick_id
-                            }
-                            print('llooo')
-                            product_obj.create(product_vals)
-                            print('hii')
-
-    def create_customer_in_quickbook(self):
-        url = self.get_import_query()
-        if url:
-            req_url = f'{url["url"]}/customer?minorversion=40'
-            headers = url.get('headers')
-            headers['Content-Type'] = 'application/json'
-            customer_obj = self.env['res.partner'].search([])
-            for customer in customer_obj:
-                if customer.quickbook_id != 0:
-                    continue
-                else:
-                    if not customer.email:
-                        customer.email = 'demomail@gmail.com'
-                    if not customer.phone:
-                        customer.phone = '000 000 000 0'
-                    if not customer.city:
-                        customer.city = "US"
-                    if not customer.zip:
-                        customer.zip = '6666 66'
-                    if not customer.street:
-                        customer.street = 'New York'
-                    if not customer.country_id:
-                        customer.country_id.name = 'USA'
-                    if not customer.x_studio_customer_number:
-                        customer.x_studio_customer_number = '000'
-                    req_body = {
-                        "FullyQualifiedName": customer.name,
-                        "PrimaryEmailAddr": {
-                            "Address": customer.email
-                        },
-                        "DisplayName": customer.name,
-                        "Notes": customer.x_studio_customer_number,
-                        "PrimaryPhone": {
-                            "FreeFormNumber": customer.phone
-                        },
-                        "CompanyName": customer.name,
-                        "BillAddr": {
-                            "City": customer.city,
-                            "PostalCode": customer.zip,
-                            "Line1": customer.street,
-                            "Country": customer.country_id.name
-                        },
-                    }
-                    response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
-                    if response.json():
-                        if response.json().get('Customer'):
-                            res = response.json().get('Customer')
-                            if 'Id' in res:
-                                customer.write({
-                                    'quickbook_id': res.get('Id'),
-                                    'qbooks_sync_token': res.get('SyncToken')
-                                })
-                                self.env.cr.commit()
-
-                        elif response.json().get('fault') and response.json().get('fault').get('error')[0].get(
-                                'code') == '3200':
-                            print('oiuy')
-                            self.action_refresh_token()
-
-    def fetch_customer_data_from_qb(self):
-        url = self.env['quickbooks.connector'].search([('id', '=', self.env.company.quickbook_connector_id)]). \
-            get_import_query()
-        if url:
-            query = 'select * from Customer'
-            get_url = url['url'] + f'/query?minorversion={self.minor_version}&query={query}'
-            data = requests.get(get_url, headers=url['headers'])
-            partner_obj = self.env['res.partner'].search([])
-            if data.json() and data.json().get('fault'):
-                if data.json().get('fault').get('type') == 'AUTHENTICATION':
-                    self.action_refresh_token()
-                    data = requests.get(get_url, headers=url['headers'])
-            if data.json() and data.json().get('QueryResponse'):
-                customer_quickbook = data.json().get('QueryResponse').get('Customer')
-                for customer in customer_quickbook:
-                    print(customer, 'customer')
-                    print(type(customer.get('Id')))
-                    exist = partner_obj.search([('quickbook_id', '=', int(customer.get('Id')))])
-                    if exist:
-                        continue
-                    else:
-                        name_exist = partner_obj.search([('name', '=', customer.get('DisplayName')),
-                                                         ('parent_id.name', '=', customer.get('CompanyName'))])
-                        if name_exist:
-                            for cust in name_exist:
-                                if cust.name == customer.get('DisplayName'):
-                                    cust.quickbook_id = int(customer.get('Id'))
-                        else:
-                            quick_id = int(customer.get('Id'))
-                            print(type(quick_id))
-
-                            partner_vals = {
-                                'name': customer.get('Name'),
-                                'is_quickbook_partner': True,
-                                'quickbook_id': quick_id,
-                                'category_id':1,
-                                'user_id': self.env.user.partnr_id.id,
-                                'x_studio_account_type': 'Direct Sales'
-
-                            }
-                            # print('llooo')
-                            # product_obj.create(product_vals)
-                            # print('hii')
-
-
+# # ----------------------------- function using scheduled action --------------------------------------#
+#     def create_item_in_qb(self):
+#         """function to create product in quickbook"""
+#         url = self.env['quickbooks.connector'].search([('id', '=', self.env.company.quickbook_connector_id)]).\
+#             get_import_query()
+#         print(url,'urllll')
+#         if url:
+#             print(url, 'urll')
+#             req_url = f'{url["url"]}/item?minorversion=4'
+#             headers = url.get('headers')
+#             headers['Content-Type'] = 'application/json'
+#             product_obj = self.env['product.product'].search([])
+#             for product in product_obj:
+#                 if product.quickbook_id !=0:
+#                     continue
+#                 else:
+#                     quick_type = {
+#                         'service': 'Service',
+#                         'consu': 'NonInventory',
+#                         'product': 'Inventory',
+#                     }
+#                     if product.quickbook_income_account_id == 0:
+#                         raise ValidationError('Please fill the income account in product form')
+#                     if product.quickbook_asset_account_id == 0:
+#                         raise ValidationError('Please fill the asset account in product form')
+#                     if product.quickbook_expense_account_id == 0:
+#                         raise ValidationError('Please fill the expense account in product form')
+#                     req_body = {
+#                         "Name": product.name + str(product.id),
+#                         "Description": product.name,
+#                         "Active": True,
+#                         "UnitPrice": product.list_price,
+#                         "PurchaseCost": product.standard_price,
+#                         "Type": quick_type.get(product.type),
+#                         "PurchaseDesc": product.name,
+#                         "IncomeAccountRef": {
+#                             "value": product.quickbook_income_account_id,
+#                             "name": product.quickbook_income_account
+#                         },
+#                         "AssetAccountRef": {
+#                             "value": product.quickbook_asset_account_id,
+#                             "name": product.quickbook_asset_account
+#                         },
+#                         "ExpenseAccountRef": {
+#                             "name": product.quickbook_expense_account,
+#                             "value": product.quickbook_expense_account_id
+#                         },
+#                         "InvStartDate": "2022-03-19"
+#                     }
+#                     if quick_type.get(product.type) == 'Inventory':
+#                         quantity = self.env['stock.quant'].search([]).filtered(
+#                             lambda r: r.product_id.id == product.id and r.quantity > 0).mapped(
+#                             'quantity')
+#                         if quantity:
+#                             req_body.update({"TrackQtyOnHand": True,
+#                                              "QtyOnHand": sum(quantity)
+#                                              })
+#                         else:
+#                             raise UserError(
+#                                 _("Add onhand quantity for %s" % product.name))
+#
+#                     response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
+#                     if response.json():
+#                         if response.json().get('Item'):
+#                             res = response.json().get('Item')
+#                             if 'Id' in res:
+#                                 product.write({
+#                                     'quickbook_id': res.get('Id'),
+#                                     'qbooks_sync_token': res.get('SyncToken')
+#                                 })
+#                                 self.env.cr.commit()
+#
+#                         elif response.json().get('Fault').get('Error')[0].get('code') == '6240':
+#                             raise UserError(
+#                                 _("Duplicate name exist error for %s. Quickbooks doesnot allow duplicate names. Please change name,"
+#                                   " or please provide the quickbook ID" % product.name))
+#                         elif response.json().get('fault') and response.json().get('fault').get('error')[0].get(
+#                                 'code') == '3200':
+#                             print('dfg')
+#                             self.action_refresh_token()
+#
+#     def fetch_products_from_quickbook(self):
+#         """function to fetch all the products from quickbook"""
+#         url = self.env['quickbooks.connector'].search([('id', '=', self.env.company.quickbook_connector_id)]).\
+#             get_import_query()
+#         if url:
+#             query = 'select * from Item'
+#             get_url = url['url'] + f'/query?minorversion={self.minor_version}&query={query}'
+#             data = requests.get(get_url, headers=url['headers'])
+#             product_obj = self.env['product.product'].search([])
+#             if data.json() and data.json().get('fault'):
+#                 if data.json().get('fault').get('type') == 'AUTHENTICATION':
+#                     self.action_refresh_token()
+#                     data = requests.get(get_url, headers=url['headers'])
+#             if data.json() and data.json().get('QueryResponse'):
+#                 item_quickbook = data.json().get('QueryResponse').get('Item')
+#                 for item in item_quickbook:
+#                     exist = product_obj.search([('quickbook_id', '=', int(item.get('Id')))])
+#                     if exist:
+#                         continue
+#                     else:
+#                         name_exist = product_obj.search([('name', '=', item.get('Name'))])
+#                         if name_exist:
+#                             for prod in name_exist:
+#                                 if prod.name == item.get('Name'):
+#                                     prod.quickbook_id = int(item.get('Id'))
+#                         else:
+#                             quick_type = {
+#                                 'Service': 'service',
+#                                 'NonInventory':'consu',
+#                                 'Inventory':'product',
+#                             }
+#                             print('jjj', quick_type.get(item.get('Type')))
+#                             quick_id = int(item.get('Id'))
+#                             print(type(quick_id))
+#
+#                             product_vals = {
+#                                 'name': item.get('Name'),
+#                                 'type': quick_type.get(item.get('Type')),
+#                                 'is_quickbook_product': True,
+#                                 'quickbook_id': quick_id
+#                             }
+#                             print('llooo')
+#                             product_obj.create(product_vals)
+#                             print('hii')
+#
+#     def create_customer_in_quickbook(self):
+#         url = self.get_import_query()
+#         if url:
+#             req_url = f'{url["url"]}/customer?minorversion=40'
+#             headers = url.get('headers')
+#             headers['Content-Type'] = 'application/json'
+#             customer_obj = self.env['res.partner'].search([])
+#             for customer in customer_obj:
+#                 if customer.quickbook_id != 0:
+#                     continue
+#                 else:
+#                     if not customer.email:
+#                         customer.email = 'demomail@gmail.com'
+#                     if not customer.phone:
+#                         customer.phone = '000 000 000 0'
+#                     if not customer.city:
+#                         customer.city = "US"
+#                     if not customer.zip:
+#                         customer.zip = '6666 66'
+#                     if not customer.street:
+#                         customer.street = 'New York'
+#                     if not customer.country_id:
+#                         customer.country_id.name = 'USA'
+#                     if not customer.x_studio_customer_number:
+#                         customer.x_studio_customer_number = '000'
+#                     req_body = {
+#                         "FullyQualifiedName": customer.name,
+#                         "PrimaryEmailAddr": {
+#                             "Address": customer.email
+#                         },
+#                         "DisplayName": customer.name,
+#                         "Notes": customer.x_studio_customer_number,
+#                         "PrimaryPhone": {
+#                             "FreeFormNumber": customer.phone
+#                         },
+#                         "CompanyName": customer.name,
+#                         "BillAddr": {
+#                             "City": customer.city,
+#                             "PostalCode": customer.zip,
+#                             "Line1": customer.street,
+#                             "Country": customer.country_id.name
+#                         },
+#                     }
+#                     response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
+#                     if response.json():
+#                         if response.json().get('Customer'):
+#                             res = response.json().get('Customer')
+#                             if 'Id' in res:
+#                                 customer.write({
+#                                     'quickbook_id': res.get('Id'),
+#                                     'qbooks_sync_token': res.get('SyncToken')
+#                                 })
+#                                 self.env.cr.commit()
+#
+#                         elif response.json().get('fault') and response.json().get('fault').get('error')[0].get(
+#                                 'code') == '3200':
+#                             print('oiuy')
+#                             self.action_refresh_token()
+#
+#     def fetch_customer_data_from_qb(self):
+#         url = self.env['quickbooks.connector'].search([('id', '=', self.env.company.quickbook_connector_id)]). \
+#             get_import_query()
+#         if url:
+#             query = 'select * from Customer'
+#             get_url = url['url'] + f'/query?minorversion={self.minor_version}&query={query}'
+#             data = requests.get(get_url, headers=url['headers'])
+#             partner_obj = self.env['res.partner'].search([])
+#             if data.json() and data.json().get('fault'):
+#                 if data.json().get('fault').get('type') == 'AUTHENTICATION':
+#                     self.action_refresh_token()
+#                     data = requests.get(get_url, headers=url['headers'])
+#             if data.json() and data.json().get('QueryResponse'):
+#                 customer_quickbook = data.json().get('QueryResponse').get('Customer')
+#                 for customer in customer_quickbook:
+#                     print(customer, 'customer')
+#                     print(type(customer.get('Id')))
+#                     exist = partner_obj.search([('quickbook_id', '=', int(customer.get('Id')))])
+#                     if exist:
+#                         continue
+#                     else:
+#                         name_exist = partner_obj.search([('name', '=', customer.get('DisplayName')),
+#                                                          ('parent_id.name', '=', customer.get('CompanyName'))])
+#                         if name_exist:
+#                             for cust in name_exist:
+#                                 if cust.name == customer.get('DisplayName'):
+#                                     cust.quickbook_id = int(customer.get('Id'))
+#                         else:
+#                             quick_id = int(customer.get('Id'))
+#                             print(type(quick_id))
+#
+#                             partner_vals = {
+#                                 'name': customer.get('Name'),
+#                                 'is_quickbook_partner': True,
+#                                 'quickbook_id': quick_id,
+#                                 'category_id':1,
+#                                 'user_id': self.env.user.partnr_id.id,
+#                                 'x_studio_account_type': 'Direct Sales'
+#
+#                             }
+#                             # print('llooo')
+#                             # product_obj.create(product_vals)
+#                             # print('hii')
+#
+#
 
 
 

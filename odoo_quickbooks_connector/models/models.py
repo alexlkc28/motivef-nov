@@ -6,7 +6,7 @@ from odoo.tools import float_compare
 class StockPicking(models.Model):
     _inherit = 'stock.picking'
 
-    quickbook_id = fields.Integer(string='Quickbook ID', store=True)
+    quickbook_id = fields.Integer(string='Quickbook ID')
     return_delivery = fields.Boolean(string='Return', store=True)
 
     def action_validate_button(self):
@@ -113,11 +113,11 @@ class SaleOrderLine(models.Model):
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
-    quickbook_id = fields.Integer(string='Quickbook ID', help="This id represents the Quickbook Account ID" , store=True)
+    quickbook_id = fields.Integer(string='Quickbook ID', help="This id represents the Quickbook Account ID")
     quickbook_connector_id = fields.Integer(string='Quickbook Connector ID',
                                             help="The id represents the quickbook connector id", default=1)
     qbooks_sync_token = fields.Char(string='Sync Token')
-    quick_product_id = fields.Integer(string='Product ID')
+    # quick_product_id = fields.Integer(string='Product ID')
 
     def action_confirm(self):
         res = super(SaleOrder, self).action_confirm()
@@ -142,7 +142,7 @@ class ProductTemplate(models.Model):
     quick_delivery_account = fields.Char(string='QuickBook Delivery Account',
                                          help='This Account is used for creating the journal entry')
     quick_delivery_account_id = fields.Integer(string='QuickBook Delivery Account ID', default=32)
-    quickbook_id = fields.Integer(string="QuickBook ID", store=True)
+    quickbook_id = fields.Integer(string="QuickBook ID")
     quickbook_income_account = fields.Char(string='Quickbook Income Account',
                                            help='This account is the expense account for the product in quickbook')
     quickbook_income_account_id = fields.Integer(string="Quickbook Income Account ID", default=32)
@@ -153,13 +153,13 @@ class ProductTemplate(models.Model):
                                           help='This account is the asset account for the product in quickbook')
     quickbook_asset_account_id = fields.Integer(string='Quickbook Asset Account ID', default=32)
     qbooks_sync_token = fields.Char(string='Sync Token')
-    is_quickbook_product = fields.Boolean(string='From QB', default=False)
+    # is_quickbook_product = fields.Boolean(string='From QB', default=False)
 
 
 class AccountMove(models.Model):
     _inherit = 'account.move'
 
-    quickbook_id = fields.Integer(string='Quickbook ID', store=True)
+    quickbook_id = fields.Integer(string='Quickbook ID')
     qbooks_sync_token = fields.Char(string='Quickbook Token')
     quick_memo = fields.Char(string='Memo')
     quick_product_id = fields.Integer(string='Product ID')

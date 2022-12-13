@@ -5,7 +5,7 @@ from odoo.exceptions import ValidationError
 class PurchaseOrder(models.Model):
     _inherit = 'purchase.order'
 
-    quickbook_id = fields.Integer(string='Quickbook ID', store=True)
+    quickbook_id = fields.Integer(string='Quickbook ID')
     quickbook_connector_id = fields.Integer(string='Quick Book Connector ID', required=True, default=1)
     qbooks_sync_token = fields.Char(string='Sync Token')
     state = fields.Selection(selection_add=[('paid', 'Paid'), ('done',)])
