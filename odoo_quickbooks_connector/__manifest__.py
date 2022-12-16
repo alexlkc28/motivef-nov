@@ -13,7 +13,7 @@
         'views/res_partner_view.xml',
         'views/views.xml',
         'data/quickbooks_connector_data.xml',
-        # 'data/crone_schedule_for_sync_to_qb.xml',
+        'data/crone_schedule_for_sync_to_qb.xml',
     ],
 
     'installable': True,

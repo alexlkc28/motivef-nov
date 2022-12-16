@@ -53,6 +53,7 @@ class QuickbooksConnector(models.Model):
         }
 
     def action_refresh_token(self):
+        print('dfghj')
         b64 = str(
             self.quick_client_id + ":" + self.quick_client_secret).encode(
             'utf-8')
@@ -159,9 +160,8 @@ class QuickbooksConnector(models.Model):
                     self.env.cr.commit()
 
             elif response.json().get('fault') and response.json().get('fault').get('error')[0].get('code') == '3200':
-                # raise UserError(
-                #     _("Token expired. Kindly refresh token"))
-                self.action_refresh_token()
+                raise UserError(
+                    _("Token expired. Kindly refresh token"))
 
     def delete_journal_entry(self, stock):
         url = self.get_import_query()
@@ -177,7 +177,8 @@ class QuickbooksConnector(models.Model):
             stock.quickbook_id = 0
             if response.json():
                 if response.json().get('fault') and response.json().get('fault').get('error')[0].get('code') == '3200':
-                    self.action_refresh_token()
+                    raise UserError(
+                        _("Token expired. Kindly refresh token"))
 
     def action_export_vendor(self, purchase):
         """function for fetching the selected vendor data from PO in quickbook"""
@@ -246,7 +247,8 @@ class QuickbooksConnector(models.Model):
                       "or please provide the quickbook ID" % vendor_data.name))
             elif response.json().get('fault') and response.json().get('fault').get('error')[0].get(
                     'code') == '3200':
-                self.action_refresh_token()
+                raise UserError(
+                    _("Token expired. Kindly refresh token"))
 
     def action_export_product(self, purchase):
         """function for fetch all the data from product for importing into quickbook"""
@@ -329,7 +331,8 @@ class QuickbooksConnector(models.Model):
             elif response.json().get('fault') and response.json().get('fault').get('error')[0].get(
                     'code') == '3200':
                 print('dfg')
-                self.action_refresh_token()
+                raise UserError(
+                    _("Token expired. Kindly refresh token"))
 
     def action_export_purchase_order(self, purchase):
         """ function that fetch all the details for creating purchase order in quickbook """
@@ -391,7 +394,8 @@ class QuickbooksConnector(models.Model):
             elif response.json().get('fault') and response.json().get('fault').get('error')[0].get(
                     'code') == '3200':
                 print('eeey')
-                self.action_refresh_token()
+                raise UserError(
+                    _("Token expired. Kindly refresh token"))
 
     def action_delete_po(self, po):
         """function that delete the so when we cancel the
@@ -410,7 +414,8 @@ class QuickbooksConnector(models.Model):
             if response.json():
                 if response.json().get('fault') and response.json().get('fault').get('error')[0].get(
                         'code') == '3200':
-                    self.action_refresh_token()
+                    raise UserError(
+                        _("Token expired. Kindly refresh token"))
 
     def action_update_po(self, record):
         """function for updating the po"""
@@ -462,7 +467,8 @@ class QuickbooksConnector(models.Model):
             if response.json():
                 if response.json().get('fault') and response.json().get('fault').get('error')[0].get(
                             'code') == '3200':
-                    self.action_refresh_token()
+                    raise UserError(
+                        _("Token expired. Kindly refresh token"))
 
     def create_product_item(self, product, desc):
         """function that call the function that create the product item in quickbook"""
@@ -562,7 +568,8 @@ class QuickbooksConnector(models.Model):
                 elif response.json().get('fault') and response.json().get('fault').get('error')[0].get(
                         'code') == '3200':
                     print('eeey')
-                    self.action_refresh_token()
+                    raise UserError(
+                        _("Token expired. Kindly refresh token"))
 
     def action_delete_so(self, record):
         """function that delete the so"""
@@ -579,7 +586,8 @@ class QuickbooksConnector(models.Model):
             record.quickbook_id = 0
             if response.json():
                 if response.json().get('fault') and response.json().get('fault').get('error')[0].get('code') == '3200':
-                    self.action_refresh_token()
+                    raise UserError(
+                        _("Token expired. Kindly refresh token"))
 
     def create_customer_data(self, customer):
         """function that helps to create a customer data in quickbook"""
@@ -635,7 +643,8 @@ class QuickbooksConnector(models.Model):
                 elif response.json().get('fault') and response.json().get('fault').get('error')[0].get(
                         'code') == '3200':
                     print('oiuy')
-                    self.action_refresh_token()
+                    raise UserError(
+                        _("Token expired. Kindly refresh token"))
 
     def create_and_sync_invoices(self, invoice, sale):
         """function that helps to create the invoice in quickbook"""
@@ -724,7 +733,8 @@ class QuickbooksConnector(models.Model):
 
                     elif response.json().get('fault') and response.json().get('fault').get('error')[0].get(
                             'code') == '3200':
-                        self.action_refresh_token()
+                        raise UserError(
+                            _("Token expired. Kindly refresh token"))
 
     def create_sale_number_product(self, sale, invoice):
         ''' function to create sale order number as a product'''
@@ -772,8 +782,8 @@ class QuickbooksConnector(models.Model):
                 elif response.json().get('fault') and response.json().get('fault').get('error')[0].get(
                         'code') == '3200':
                     print('dfg')
-                    self.action_refresh_token()
-
+                    raise UserError(
+                        _("Token expired. Kindly refresh token"))
 
     def sale_order_status_updation(self, sales):
         """function helps to update the sale order"""
@@ -796,7 +806,8 @@ class QuickbooksConnector(models.Model):
             response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
             if response.json():
                 if response.json().get('fault') and response.json().get('fault').get('error')[0].get('code') == '3200':
-                    self.action_refresh_token()
+                    raise UserError(
+                        _("Token expired. Kindly refresh token"))
 
     def action_export_invoice_status(self):
         """this function is helps to updates the invoice status in odoo.
