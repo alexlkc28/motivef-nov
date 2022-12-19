@@ -648,93 +648,68 @@ class QuickbooksConnector(models.Model):
 
     def create_and_sync_invoices(self, invoice, sale):
         """function that helps to create the invoice in quickbook"""
-        if not sale.quickbook_id == 0:
-            url = self.get_import_query()
-            print(url)
-            if url:
-                req_url = f'{url["url"]}/invoice?minorversion=65'
-                headers = url.get('headers')
-                headers['Content-Type'] = 'application/json'
-                if invoice.partner_id.parent_id:
-                    customer = invoice.partner_id.parent_id.name
-                    customer_code = invoice.partner_id.parent_id.quickbook_id
-                    print(customer)
-                else:
-                    customer = invoice.partner_id.name
-                    customer_code = invoice.partner_id.quickbook_id
-                req_body = {
-                    "Line": [],
-                    "CustomerRef": {
-                        "name": customer,
-                        "value": customer_code
-                    }
+        url = self.get_import_query()
+        print(url)
+        if url:
+            req_url = f'{url["url"]}/invoice?minorversion=65'
+            headers = url.get('headers')
+            headers['Content-Type'] = 'application/json'
+            print(invoice.invoice_date_due)
+
+            if invoice.partner_id.parent_id:
+                if invoice.partner_id.parent_id.quickbook_id == 0:
+                    self.create_customer_data(invoice.partner_id.parent_id)
+                customer = invoice.partner_id.parent_id.name
+                customer_code = invoice.partner_id.parent_id.quickbook_id
+                print(customer)
+            else:
+                customer = invoice.partner_id.name
+                customer_code = invoice.partner_id.quickbook_id
+            req_body = {
+                "Line": [],
+                "DueDate": str(invoice.invoice_date_due),
+                "CustomerRef": {
+                    "name": customer,
+                    "value": customer_code
                 }
-                print('dfgh')
-                amount = invoice.amount_total
-                if sale.quick_product_id == 0:
-                    self.create_sale_number_product(sale, invoice)
-                    print('heey')
-                item_name = sale.name
-                item_code = sale.quick_product_id
-                print(item_code, 'iteeem')
-                req_body['Line'].append(
-                    {
-                        "DetailType": "SalesItemLineDetail",
-                        "Amount": amount,
-                        "SalesItemLineDetail": {
-                            "ItemRef": {
-                                "name": item_name,
-                                "value": item_code
-                            }
+            }
+            print('dfgh')
+            amount = invoice.amount_total
+            if sale.quick_product_id == 0:
+                self.create_sale_number_product(sale, invoice)
+                print('heey')
+            item_name = sale.name
+            item_code = sale.quick_product_id
+            print(item_code, 'iteeem')
+            req_body['Line'].append(
+                {
+                    "DetailType": "SalesItemLineDetail",
+                    "Amount": amount,
+                    "SalesItemLineDetail": {
+                        "ItemRef": {
+                            "name": item_name,
+                            "value": item_code
                         }
                     }
-                )
-                # customer = invoice.partner_id.name
-                # customer_code = invoice.partner_id.quickbook_id
-                # req_body = {
-                #     "Line": [],
-                #     "CustomerRef": {
-                #         "name": customer,
-                #         "value": customer_code
-                #     }
-                # }
-                # for line in invoice.invoice_line_ids:
-                #     amount = line.price_subtotal
-                #     if line.product_id:
-                #         if line.product_id.quickbook_id == 0:
-                #             self.create_product_item(line.product_id, line.name)
-                #         item_name = line.product_id.name
-                #         item_code = line.product_id.quickbook_id
-                #         req_body['Line'].append(
-                #             {
-                #                 "DetailType": "SalesItemLineDetail",
-                #                 "Amount": amount,
-                #                 "SalesItemLineDetail": {
-                #                     "ItemRef": {
-                #                         "name": item_name,
-                #                         "value": item_code
-                #                     }
-                #                 }
-                #             }
-                #         )
+                }
+            )
+            response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
+            print(response)
+            if response.json():
+                print(response.json(), 'llooo' )
+                if response.json().get('Invoice'):
+                    res = response.json().get('Invoice')
+                    if 'Id' in res:
+                        invoice.write({
+                            'quickbook_id': res.get('Id'),
+                            'qbooks_sync_token': res.get('SyncToken')
+                        })
+                        self.env.cr.commit()
 
-                response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
-                print(response)
-                if response.json():
-                    print(response.json(), 'llooo' )
-                    if response.json().get('Invoice'):
-                        res = response.json().get('Invoice')
-                        if 'Id' in res:
-                            invoice.write({
-                                'quickbook_id': res.get('Id'),
-                                'qbooks_sync_token': res.get('SyncToken')
-                            })
-                            self.env.cr.commit()
-
-                    elif response.json().get('fault') and response.json().get('fault').get('error')[0].get(
-                            'code') == '3200':
-                        raise UserError(
-                            _("Token expired. Kindly refresh token"))
+                elif response.json().get('fault') and response.json().get('fault').get('error')[0].get(
+                        'code') == '3200':
+                    raise UserError(
+                        _("Token expired. Kindly refresh token"))
 
     def create_sale_number_product(self, sale, invoice):
         ''' function to create sale order number as a product'''
