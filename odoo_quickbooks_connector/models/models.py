@@ -119,21 +119,21 @@ class SaleOrder(models.Model):
     qbooks_sync_token = fields.Char(string='Sync Token')
     quick_product_id = fields.Integer(string='Product ID')
 
-    def action_confirm(self):
-        res = super(SaleOrder, self).action_confirm()
-        for rec in self:
-            sale = rec
-            status = 'Pending'
-            self.env['quickbooks.connector'].search([('id', '=', self.env.company.quickbook_connector_id)]). \
-                action_create_estimate(sale, status)
-        return res
+    # def action_confirm(self):
+    #     res = super(SaleOrder, self).action_confirm()
+    #     for rec in self:
+    #         sale = rec
+    #         status = 'Pending'
+    #         self.env['quickbooks.connector'].search([('id', '=', self.env.company.quickbook_connector_id)]). \
+    #             action_create_estimate(sale, status)
+    #     return res
 
-    def action_cancel(self):
-        res = super().action_cancel()
-        for record in self:
-            self.env['quickbooks.connector'].search([('id', '=', self.env.company.quickbook_connector_id)]). \
-                action_delete_so(record)
-        return res
+    # def action_cancel(self):
+    #     res = super().action_cancel()
+    #     for record in self:
+    #         self.env['quickbooks.connector'].search([('id', '=', self.env.company.quickbook_connector_id)]). \
+    #             action_delete_so(record)
+    #     return res
 
 
 class ProductTemplate(models.Model):

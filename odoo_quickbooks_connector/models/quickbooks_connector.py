@@ -494,100 +494,100 @@ class QuickbooksConnector(models.Model):
             if data.json() and data.json().get('QueryResponse'):
                 bill = data.json().get('QueryResponse').get('Bill')
 
-    def action_create_estimate(self, sale, status):
-        """function that create an estimate that corresponding
-        to the sale order of odoo"""
-        url = self.get_import_query()
-        if url:
-            req_url = f'{url["url"]}/estimate?minorversion=40'
-            headers = url.get('headers')
-            headers['Content-Type'] = 'application/json'
+    # def action_create_estimate(self, sale, status):
+    #     """function that create an estimate that corresponding
+    #     to the sale order of odoo"""
+    #     url = self.get_import_query()
+    #     if url:
+    #         req_url = f'{url["url"]}/estimate?minorversion=40'
+    #         headers = url.get('headers')
+    #         headers['Content-Type'] = 'application/json'
+    #
+    #         if sale.partner_id.quickbook_id == 0:
+    #             self.create_customer_data(sale.partner_id)
+    #         for line in sale.order_line:
+    #             if line.product_id.quickbook_id == 0:
+    #                 desc = line.name
+    #                 self.create_product_item(line.product_id, desc)
+    #         req_body = {
+    #             "TotalAmt": sale.amount_total,
+    #             "Line": [],
+    #             "BillEmail": {
+    #                 "Address": sale.partner_id.email
+    #             },
+    #             'TxnStatus': status,
+    #             "CustomerMemo": {
+    #                 "value": "Thank you for your business and have a great day!"
+    #             },
+    #             "ShipAddr": {
+    #                 "City": sale.partner_id.city,
+    #                 "Line1": sale.partner_id.street,
+    #                 "PostalCode": sale.partner_id.zip,
+    #             },
+    #             "BillAddr": {
+    #                 "City": sale.partner_id.city,
+    #                 "Line1": sale.partner_id.street,
+    #                 "PostalCode": sale.partner_id.zip,
+    #             },
+    #
+    #             "CustomerRef": {
+    #                 "name": sale.partner_id.name,
+    #                 "value": sale.partner_id.quickbook_id
+    #             },
+    #         }
+    #         for line in sale.order_line:
+    #             req_body['Line'].append(
+    #                 {
+    #                     "Description": line.name,
+    #                     "DetailType": "SalesItemLineDetail",
+    #                     "SalesItemLineDetail": {
+    #                         "Qty": line.product_uom_qty,
+    #                         "UnitPrice": line.price_unit,
+    #                         "ItemRef": {
+    #                             "name": line.name,
+    #                             "value": line.product_id.quickbook_id
+    #                         }
+    #                     },
+    #
+    #                     "Amount": line.price_subtotal,
+    #
+    #                 }
+    #
+    #             )
+    #         response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
+    #         if response.json():
+    #             if response.json().get('Estimate'):
+    #                 res = response.json().get('Estimate')
+    #                 if 'Id' in res:
+    #                     sale.write({
+    #                         'quickbook_id': res.get('Id'),
+    #                         'qbooks_sync_token': res.get('SyncToken')
+    #                     })
+    #                     self.env.cr.commit()
+    #
+    #             elif response.json().get('fault') and response.json().get('fault').get('error')[0].get(
+    #                     'code') == '3200':
+    #                 print('eeey')
+    #                 raise UserError(
+    #                     _("Token expired. Kindly refresh token"))
 
-            if sale.partner_id.quickbook_id == 0:
-                self.create_customer_data(sale.partner_id)
-            for line in sale.order_line:
-                if line.product_id.quickbook_id == 0:
-                    desc = line.name
-                    self.create_product_item(line.product_id, desc)
-            req_body = {
-                "TotalAmt": sale.amount_total,
-                "Line": [],
-                "BillEmail": {
-                    "Address": sale.partner_id.email
-                },
-                'TxnStatus': status,
-                "CustomerMemo": {
-                    "value": "Thank you for your business and have a great day!"
-                },
-                "ShipAddr": {
-                    "City": sale.partner_id.city,
-                    "Line1": sale.partner_id.street,
-                    "PostalCode": sale.partner_id.zip,
-                },
-                "BillAddr": {
-                    "City": sale.partner_id.city,
-                    "Line1": sale.partner_id.street,
-                    "PostalCode": sale.partner_id.zip,
-                },
-
-                "CustomerRef": {
-                    "name": sale.partner_id.name,
-                    "value": sale.partner_id.quickbook_id
-                },
-            }
-            for line in sale.order_line:
-                req_body['Line'].append(
-                    {
-                        "Description": line.name,
-                        "DetailType": "SalesItemLineDetail",
-                        "SalesItemLineDetail": {
-                            "Qty": line.product_uom_qty,
-                            "UnitPrice": line.price_unit,
-                            "ItemRef": {
-                                "name": line.name,
-                                "value": line.product_id.quickbook_id
-                            }
-                        },
-
-                        "Amount": line.price_subtotal,
-
-                    }
-
-                )
-            response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
-            if response.json():
-                if response.json().get('Estimate'):
-                    res = response.json().get('Estimate')
-                    if 'Id' in res:
-                        sale.write({
-                            'quickbook_id': res.get('Id'),
-                            'qbooks_sync_token': res.get('SyncToken')
-                        })
-                        self.env.cr.commit()
-
-                elif response.json().get('fault') and response.json().get('fault').get('error')[0].get(
-                        'code') == '3200':
-                    print('eeey')
-                    raise UserError(
-                        _("Token expired. Kindly refresh token"))
-
-    def action_delete_so(self, record):
-        """function that delete the so"""
-        url = self.get_import_query()
-        if url:
-            req_url = f'{url["url"]}/estimate?operation=delete&minorversion=65'
-            headers = url.get('headers')
-            headers['Content-Type'] = 'application/json'
-            req_body = {
-                "SyncToken": "0",
-                "Id": record.quickbook_id,
-            }
-            response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
-            record.quickbook_id = 0
-            if response.json():
-                if response.json().get('fault') and response.json().get('fault').get('error')[0].get('code') == '3200':
-                    raise UserError(
-                        _("Token expired. Kindly refresh token"))
+    # def action_delete_so(self, record):
+    #     """function that delete the so"""
+    #     url = self.get_import_query()
+    #     if url:
+    #         req_url = f'{url["url"]}/estimate?operation=delete&minorversion=65'
+    #         headers = url.get('headers')
+    #         headers['Content-Type'] = 'application/json'
+    #         req_body = {
+    #             "SyncToken": "0",
+    #             "Id": record.quickbook_id,
+    #         }
+    #         response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
+    #         record.quickbook_id = 0
+    #         if response.json():
+    #             if response.json().get('fault') and response.json().get('fault').get('error')[0].get('code') == '3200':
+    #                 raise UserError(
+    #                     _("Token expired. Kindly refresh token"))
 
     def create_customer_data(self, customer):
         """function that helps to create a customer data in quickbook"""
@@ -629,6 +629,7 @@ class QuickbooksConnector(models.Model):
                 },
             }
             response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
+            print(req_body)
             if response.json():
                 print(response.json())
                 if response.json().get('Customer'):
@@ -655,10 +656,9 @@ class QuickbooksConnector(models.Model):
             headers = url.get('headers')
             headers['Content-Type'] = 'application/json'
             print(invoice.invoice_date_due)
-
+            if invoice.partner_id.quickbook_id == 0:
+                self.create_customer_data(invoice.partner_id)
             if invoice.partner_id.parent_id:
-                if invoice.partner_id.parent_id.quickbook_id == 0:
-                    self.create_customer_data(invoice.partner_id.parent_id)
                 customer = invoice.partner_id.parent_id.name
                 customer_code = invoice.partner_id.parent_id.quickbook_id
                 print(customer)
@@ -693,6 +693,7 @@ class QuickbooksConnector(models.Model):
                     }
                 }
             )
+            print(req_body)
             response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
             print(response)
             if response.json():
@@ -760,29 +761,29 @@ class QuickbooksConnector(models.Model):
                     raise UserError(
                         _("Token expired. Kindly refresh token"))
 
-    def sale_order_status_updation(self, sales):
-        """function helps to update the sale order"""
-        for sale in sales:
-            self.delete_the_current_so(sale)
-            status = 'Closed'
-            self.action_create_estimate(sale, status)
+    # def sale_order_status_updation(self, sales):
+    #     """function helps to update the sale order"""
+    #     for sale in sales:
+    #         self.delete_the_current_so(sale)
+    #         status = 'Closed'
+    #         self.action_create_estimate(sale, status)
 
-    def delete_the_current_so(self, sale):
-        """function helps to delete the current so"""
-        url = self.get_import_query()
-        if url:
-            req_url = f'{url["url"]}/estimate?operation=delete&minorversion=65'
-            headers = url.get('headers')
-            headers['Content-Type'] = 'application/json'
-            req_body = {
-                "SyncToken": "3",
-                "Id": sale.quickbook_id
-            }
-            response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
-            if response.json():
-                if response.json().get('fault') and response.json().get('fault').get('error')[0].get('code') == '3200':
-                    raise UserError(
-                        _("Token expired. Kindly refresh token"))
+    # def delete_the_current_so(self, sale):
+    #     """function helps to delete the current so"""
+    #     url = self.get_import_query()
+    #     if url:
+    #         req_url = f'{url["url"]}/estimate?operation=delete&minorversion=65'
+    #         headers = url.get('headers')
+    #         headers['Content-Type'] = 'application/json'
+    #         req_body = {
+    #             "SyncToken": "3",
+    #             "Id": sale.quickbook_id
+    #         }
+    #         response = requests.post(req_url, data=json.dumps(req_body), headers=headers)
+    #         if response.json():
+    #             if response.json().get('fault') and response.json().get('fault').get('error')[0].get('code') == '3200':
+    #                 raise UserError(
+    #                     _("Token expired. Kindly refresh token"))
 
     def action_export_invoice_status(self):
         """this function is helps to updates the invoice status in odoo.
@@ -821,7 +822,7 @@ class QuickbooksConnector(models.Model):
                                             else:
                                                 self.invoice_paid = True
                                         if self.invoice_paid != False:
-                                            self.sale_order_status_updation(sale)
+                                            # self.sale_order_status_updation(sale)
                                             self.action_export_payment_status()
 
     def action_fetch_payment_methods(self):
