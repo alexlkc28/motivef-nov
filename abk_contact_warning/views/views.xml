@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <template id="assets_backend" name="contacts assets" inherit_id="web.assets_backend">
+            <xpath expr="." position="inside">
+                <script type="text/javascript" src="/abk_contact_warning/static/src/js/custom_form_view.js"></script>
+            </xpath>
+        </template>
+
+        <record id="res_partner_view_form" model="ir.ui.view">
+            <field name="name">res.partner.form.inherit</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="/form" position="attributes">
+<!--                    <attribute name="create">false</attribute>-->
+<!--                    <attribute name="delete">false</attribute>-->
+                    <attribute name="js_class">res_partner_form</attribute>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
