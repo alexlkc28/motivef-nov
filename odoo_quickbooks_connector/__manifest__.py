@@ -12,6 +12,7 @@
         'views/purchase_order.xml',
         'views/res_partner_view.xml',
         'views/views.xml',
+        'views/report_synced_quickbook.xml',
         'data/quickbooks_connector_data.xml',
         'data/crone_schedule_for_sync_to_qb.xml',
     ],

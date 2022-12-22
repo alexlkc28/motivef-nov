@@ -1,3 +1,5 @@
+import base64
+
 from odoo import models, fields, _
 from odoo.exceptions import UserError
 from odoo.tools import float_compare
@@ -194,7 +196,72 @@ class ResCompany(models.Model):
     _inherit = 'res.company'
 
     receiver = fields.Char(string='Receive To')
-    sale_count = fields.Integer(string='Total No.of Sale Synced: ')
-    purchase_count = fields.Integer(string='Total No.of PO synced: ')
-    invoice_count = fields.Integer(string='Total No.of invoices Synced: ')
+    purchase_count = fields.Integer(string='Total No.of PO synced: ', compute='_compute_count_synced_qb')
+    purchase_failed = fields.Integer(string='Failed Purchase: ', compute='_compute_count_synced_qb')
+    invoice_count = fields.Integer(string='Total No.of invoices Synced: ', compute='_compute_count_synced_qb')
+    invoice_failed = fields.Integer(string='Failed Invoice', compute='_compute_count_synced_qb')
+    journal_count = fields.Integer(string='Entries Created', compute='_compute_count_synced_qb')
+    journal_failed = fields.Integer(string='Failed Entries', compute='_compute_count_synced_qb')
+    template_id = fields.Many2one('mail.template', string='Email Template', domain="[('model','=','customer.report')]",
+                                  required=True)
 
+    def _compute_count_synced_qb(self):
+        self.purchase_count = 0
+        self.invoice_count = 0
+        self.invoice_failed = 0
+        self.purchase_failed = 0
+        for rec in self:
+            rec.purchase_count = self.env['purchase.order'].search_count([('quickbook_id', '!=', 0)])
+            rec.purchase_failed = self.env['purchase.order'].search_count([('quickbook_id', '=', 0)])
+            rec.journal_count = self.env['stock.picking'].search_count([('quickbook_id', '!=', 0)])
+            rec.journal_failed = self.env['stock.picking'].search_count([('quickbook_id', '=', 0)])
+            print(rec.purchase_count)
+            invoice = self.env['account.move'].search([])
+            rec.invoice_count = invoice.search_count([('quickbook_id', '!=', 0)])
+            rec.invoice_failed = invoice.search_count([('quickbook_id', '=', 0)])
+    def send_email_with_synced_report(self):
+        print('hii')
+        self.env['mail.mail'].sudo().create({
+            'email_from': 'democompany74@gmail.com',
+            'author_id': self.env.user.partner_id.id,
+            'body_html': 'Hello this mail is to show that the quickbook success and failure rate.<br>'
+                         '<table border="1">'
+                         '<thead>'
+                         '<tr>'
+                         '<th>No.of Invoice Synced</th>'
+                         '<th>No.of PO Synced</th>'
+                         '<th>No.of Entries created</th>'
+                         '</tr>'
+                         '</thead>'
+                         '<tbody>'
+                         '<tr>'
+                         '<td>%s</td>'
+                         '<td>%s</td>'
+                         '<td>%s</td>'
+                         '</tr>'
+                         '</tbody>'
+                         '</table>'%(self.invoice_count, self.purchase_count, self.invoice_count),
+            'subject': 'Quickbook Sync History',
+            'email_to': self.receiver
+        }).send(auto_commit=False)
+
+    def print_reprt(self):
+        # return self.env.ref('odoo_quickbooks_connector.custom_report_pdf_report').report_action(self)
+        report_template_id = self.env.ref(
+            'odoo_quickbooks_connector.custom_report_pdf_report')._render_qweb_pdf(self.id)
+        data_record = base64.b64encode(report_template_id[0])
+        ir_values = {
+            'name': "Quckbook Report",
+            'type': 'binary',
+            'datas': data_record,
+            'store_fname': data_record,
+            'mimetype': 'application/x-pdf',
+        }
+        data_id = self.env['ir.attachment'].create(ir_values)
+        template = self.template_id
+        template.attachment_ids = [(6, 0, [data_id.id])]
+        email_values = {'email_to': self.receiver,
+                        'email_from': 'democompany74@gmail.com'}
+        template.send_mail(self.id, email_values=email_values, force_send=True)
+        template.attachment_ids = [(3, data_id.id)]
+        return True

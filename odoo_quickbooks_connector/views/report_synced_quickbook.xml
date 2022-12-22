@@ -1,0 +1,79 @@
+<odoo>
+       <template id="custom_report_template">
+           <t t-call="web.html_container">
+               <t t-call="web.external_layout">
+                   <div class="page">
+                       <div class="row mt64 mb32">
+                           <div class="col-md-12">
+                               <h2 class="text-center">
+                                   <span>
+                                       Quickbook Report
+                                   </span>
+                               </h2>
+                           </div>
+                       </div>
+                       <div class="row pt-2">
+                           <div class="col-md-12">
+                               <t>
+                                   <table class="table table-bordered">
+                                       <thead>
+                                           <t>
+                                               <th class="text-center"></th>
+                                               <th class="text-center">Success</th>
+                                               <th class="text-center">Failed</th>
+                                           </t>
+                                       </thead>
+                                       <tbody>
+                                        <tr t-foreach="docs" t-as="doc">
+                                               <td class="text-center">
+                                                   Invoice
+                                                </td>
+                                                <td class="text-center">
+                                                   <t t-esc="doc.invoice_count"/>
+                                                </td>
+                                               <td class="text-center">
+                                                   <t t-esc="doc.invoice_failed"/>
+                                                </td>
+                                           </tr>
+                                           <tr t-foreach="docs" t-as="doc">
+                                               <td class="text-center">
+                                                   Purchase
+                                                </td>
+                                                <td class="text-center">
+                                                   <t t-esc="doc.purchase_count"/>
+                                                </td>
+                                               <td class="text-center">
+                                                   <t t-esc="doc.purchase_failed"/>
+                                                </td>
+                                           </tr>
+                                           <tr t-foreach="docs" t-as="doc">
+                                               <td class="text-center">
+                                                   Entries
+                                                </td>
+                                                <td class="text-center">
+                                                   <t t-esc="doc.journal_count"/>
+                                                </td>
+                                               <td class="text-center">
+                                                   <t t-esc="doc.journal_failed"/>
+                                                </td>
+                                           </tr>
+                                       </tbody>
+                                   </table>
+                               </t>
+                           </div>
+                       </div>
+                   </div>
+               </t>
+           </t>
+       </template>
+
+    <report
+        id="custom_report_pdf_report"
+        model="res.company"
+        string="Customer Report"
+        report_type="qweb-pdf"
+        name="odoo_quickbooks_connector.custom_report_template"
+        file="odoo_quickbooks_connector.custom_report_template"
+        menu="False"
+/>
+</odoo>
