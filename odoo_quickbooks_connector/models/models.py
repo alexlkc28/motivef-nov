@@ -219,36 +219,9 @@ class ResCompany(models.Model):
             invoice = self.env['account.move'].search([])
             rec.invoice_count = invoice.search_count([('quickbook_id', '!=', 0)])
             rec.invoice_failed = invoice.search_count([('quickbook_id', '=', 0)])
-    def send_email_with_synced_report(self):
-        print('hii')
-        self.env['mail.mail'].sudo().create({
-            'email_from': 'democompany74@gmail.com',
-            'author_id': self.env.user.partner_id.id,
-            'body_html': 'Hello this mail is to show that the quickbook success and failure rate.<br>'
-                         '<table border="1">'
-                         '<thead>'
-                         '<tr>'
-                         '<th>No.of Invoice Synced</th>'
-                         '<th>No.of PO Synced</th>'
-                         '<th>No.of Entries created</th>'
-                         '</tr>'
-                         '</thead>'
-                         '<tbody>'
-                         '<tr>'
-                         '<td>%s</td>'
-                         '<td>%s</td>'
-                         '<td>%s</td>'
-                         '</tr>'
-                         '</tbody>'
-                         '</table>'%(self.invoice_count, self.purchase_count, self.invoice_count),
-            'subject': 'Quickbook Sync History',
-            'email_to': self.receiver
-        }).send(auto_commit=False)
-
-    def print_reprt(self):
-        # return self.env.ref('odoo_quickbooks_connector.custom_report_pdf_report').report_action(self)
-        report_template_id = self.env.ref(
-            'odoo_quickbooks_connector.custom_report_pdf_report')._render_qweb_pdf(self.id)
+    def print_report(self):
+        report_template_id = self.env.ref('odoo_quickbooks_connector.custom_report_pdf_report')\
+            ._render_qweb_pdf(self.id)
         data_record = base64.b64encode(report_template_id[0])
         ir_values = {
             'name': "Quckbook Report",
@@ -261,7 +234,7 @@ class ResCompany(models.Model):
         template = self.template_id
         template.attachment_ids = [(6, 0, [data_id.id])]
         email_values = {'email_to': self.receiver,
-                        'email_from': 'democompany74@gmail.com'}
+                        'email_from': self.env.user.partner_id.email}
         template.send_mail(self.id, email_values=email_values, force_send=True)
         template.attachment_ids = [(3, data_id.id)]
         return True

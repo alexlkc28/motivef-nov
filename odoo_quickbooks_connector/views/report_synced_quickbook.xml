@@ -70,7 +70,7 @@
     <report
         id="custom_report_pdf_report"
         model="res.company"
-        string="Customer Report"
+        string="Custom Report"
         report_type="qweb-pdf"
         name="odoo_quickbooks_connector.custom_report_template"
         file="odoo_quickbooks_connector.custom_report_template"

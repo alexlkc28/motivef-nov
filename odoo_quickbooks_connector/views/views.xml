@@ -42,8 +42,7 @@
                             <field name="receiver"/>
                             <field name="purchase_count"/>
                             <field name="invoice_count"/>
-                            <button name="send_email_with_synced_report" type="object" string="Send Report"/>
-                            <button name="print_reprt" type="object" string="Print Report"/>
+                            <button name="print_report" type="object" string="Print Report"/>
                         </group>
                         <group>
                             <field name="template_id"/>
@@ -51,9 +50,6 @@
                             <field name="invoice_failed"/>
                             <field name="journal_count"/>
                             <field name="journal_failed"/>
-<!--                            <field name="invoice_count"/>-->
-<!--                            <button name="send_email_with_synced_report" type="object" string="Send Report"/>-->
-<!--                            <button name="print_reprt" type="object" string="Print Report"/>-->
                         </group>
                     </group>
                 </page>
